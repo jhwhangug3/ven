@@ -1906,9 +1906,13 @@ class Chatbot {
     }
     
     scrollToBottom() {
-        // Use setTimeout to ensure DOM updates are complete
         setTimeout(() => {
-            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            // Extra offset for mobile input area
+            let extraOffset = 0;
+            if (window.innerWidth <= 768) {
+                extraOffset = 100; // Adjust this value if your input area is taller
+            }
+            this.chatMessages.scrollTop = this.chatMessages.scrollHeight + extraOffset;
         }, 100);
     }
     
