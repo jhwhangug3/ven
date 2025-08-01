@@ -180,6 +180,7 @@ class Chatbot {
         const hamburgerMenu = document.getElementById('hamburgerMenu');
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
+        const chatInputArea = document.querySelector('.chat-input-area');
         
         if (hamburgerMenu && sidebar && mainContent) {
             hamburgerMenu.addEventListener('click', () => {
@@ -190,8 +191,16 @@ class Chatbot {
                 if (window.innerWidth <= 768) {
                     if (sidebar.classList.contains('open')) {
                         this.addOverlay();
+                        // Hide chat input area when sidebar is open on mobile
+                        if (chatInputArea) {
+                            chatInputArea.style.display = 'none';
+                        }
                     } else {
                         this.removeOverlay();
+                        // Show chat input area when sidebar is closed on mobile
+                        if (chatInputArea) {
+                            chatInputArea.style.display = 'flex';
+                        }
                     }
                 }
             });
@@ -205,6 +214,10 @@ class Chatbot {
                     sidebar.classList.remove('open');
                     hamburgerMenu.classList.remove('active');
                     this.removeOverlay();
+                    // Show chat input area when sidebar is closed
+                    if (chatInputArea) {
+                        chatInputArea.style.display = 'flex';
+                    }
                 }
             });
         }
@@ -380,16 +393,65 @@ class Chatbot {
             }
             
             chatItem.innerHTML = `
-                <div class="chat-title">${chat.title}</div>
-                <div class="chat-date">${new Date(chat.createdAt).toLocaleDateString()}</div>
+                <div class="chat-item-content">
+                    <div class="chat-title">${chat.title}</div>
+                    <div class="chat-date">${new Date(chat.createdAt).toLocaleDateString()}</div>
+                </div>
+                <button class="delete-chat-btn" title="Delete chat">
+                    <i class="fas fa-trash"></i>
+                </button>
             `;
             
-            chatItem.addEventListener('click', () => {
+            // Add click event for switching to chat
+            const chatContent = chatItem.querySelector('.chat-item-content');
+            chatContent.addEventListener('click', () => {
                 this.switchToChat(chat.id);
+            });
+            
+            // Add click event for delete button
+            const deleteBtn = chatItem.querySelector('.delete-chat-btn');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteChat(chat.id);
             });
             
             chatList.appendChild(chatItem);
         });
+    }
+    
+    // Delete a chat
+    deleteChat(chatId) {
+        // Don't delete if it's the only chat
+        if (this.chatHistory.length <= 1) {
+            return;
+        }
+        
+        // Find the chat to delete
+        const chatIndex = this.chatHistory.findIndex(chat => chat.id === chatId);
+        if (chatIndex === -1) return;
+        
+        // If we're deleting the current chat, switch to another chat first
+        if (chatId === this.currentChatId) {
+            // Switch to the next available chat, or the previous one if this is the last
+            let newChatId;
+            if (chatIndex === this.chatHistory.length - 1) {
+                // This is the last chat, switch to the previous one
+                newChatId = this.chatHistory[chatIndex - 1].id;
+            } else {
+                // Switch to the next chat
+                newChatId = this.chatHistory[chatIndex + 1].id;
+            }
+            this.switchToChat(newChatId);
+        }
+        
+        // Remove the chat from history
+        this.chatHistory.splice(chatIndex, 1);
+        
+        // Save to storage
+        this.saveToStorage();
+        
+        // Update the sidebar
+        this.updateChatSidebar();
     }
     
     // Switch to a different chat
@@ -518,7 +580,7 @@ class Chatbot {
             
             if (!commonWords.includes(cleanMessage.toLowerCase())) {
                 this.userMemory.name = cleanMessage;
-                return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
+            return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
             }
         }
         
