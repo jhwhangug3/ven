@@ -499,12 +499,6 @@ class Chatbot {
             return translationResult;
         }
         
-        // Check for user memory/context updates
-        const memoryResult = this.handleUserMemory(message);
-        if (memoryResult) {
-            return memoryResult;
-        }
-        
         // Check for Nahin searches first (highest priority)
         if (this.isNahinSearch(message)) {
             return this.getNahinInfo(message);
@@ -527,11 +521,22 @@ class Chatbot {
                              lowerMessage.includes('how old') ||
                              lowerMessage.includes('how tall') ||
                              lowerMessage.includes('where is') ||
-                             lowerMessage.includes('when was');
+                             lowerMessage.includes('when was') ||
+                             // Check if it's just a single word that could be a person's name
+                             (message.trim().split(' ').length === 1 && 
+                              message.trim().length >= 3 && 
+                              message.trim().length <= 20 &&
+                              /^[a-zA-Z]+$/.test(message.trim()));
         
         // If it's a search query, skip generic responses and search directly
         if (isSearchQuery) {
             return await this.searchForInformation(message);
+        }
+        
+        // Check for user memory/context updates (moved after search queries)
+        const memoryResult = this.handleUserMemory(message);
+        if (memoryResult) {
+            return memoryResult;
         }
         
         // Check for exact matches for generic responses (longer phrases first)
@@ -579,8 +584,66 @@ class Chatbot {
             ];
             
             if (!commonWords.includes(cleanMessage.toLowerCase())) {
+                // Additional check: if this looks like it could be a famous person's name,
+                // don't treat it as a user's name unless it's in a clear name context
+                const famousNames = [
+                    'elon', 'musk', 'bill', 'gates', 'steve', 'jobs', 'mark', 'zuckerberg', 'jeff', 'bezos',
+                    'sundar', 'pichai', 'satya', 'nadella', 'tim', 'cook', 'larry', 'page', 'sergey', 'brin',
+                    'warren', 'buffett', 'jack', 'ma', 'masayoshi', 'son', 'larry', 'ellison', 'michael', 'dell',
+                    'paul', 'allen', 'steve', 'ballmer', 'reed', 'hastings', 'brian', 'chesky', 'travis', 'kalanick',
+                    'evan', 'spiegel', 'bobby', 'murphy', 'kevin', 'systrom', 'mike', 'krieger', 'jan', 'koum',
+                    'brian', 'acton', 'drew', 'houston', 'arash', 'ferdowsi', 'ben', 'silbermann', 'evan', 'sharp',
+                    'paul', 'sciarra', 'ron', 'conway', 'marc', 'andreessen', 'peter', 'thiel', 'reid', 'hoffman',
+                    'chamath', 'palihapitiya', 'naval', 'ravikant', 'sam', 'altman', 'dario', 'amodei', 'demis', 'hassabis',
+                    'yann', 'lecun', 'geoffrey', 'hinton', 'andrew', 'ng', 'fei', 'li', 'katherine', 'johnson',
+                    'ada', 'lovelace', 'grace', 'hopper', 'alan', 'turing', 'john', 'von', 'neumann', 'claude', 'shannon',
+                    'marvin', 'minsky', 'seymour', 'papert', 'donald', 'knuth', 'edsger', 'dijkstra', 'dennis', 'ritchie',
+                    'ken', 'thompson', 'brian', 'kernighan', 'linus', 'torvalds', 'richard', 'stallman', 'james', 'gosling',
+                    'bjarne', 'stroustrup', 'guido', 'van', 'rossum', 'yukihiro', 'matsumoto', 'rasmus', 'lerdorf',
+                    'brendan', 'eich', 'james', 'gunn', 'christopher', 'nolan', 'quentin', 'tarantino', 'martin', 'scorsese',
+                    'steven', 'spielberg', 'james', 'cameron', 'george', 'lucas', 'francis', 'ford', 'coppola',
+                    'alfred', 'hitchcock', 'stanley', 'kubrick', 'federico', 'fellini', 'ingmar', 'bergman',
+                    'akira', 'kurosawa', 'satyajit', 'ray', 'mira', 'nair', 'deepa', 'mehta', 'gurinder', 'chadha',
+                    'ang', 'lee', 'wong', 'kar', 'wai', 'zhang', 'yimou', 'chen', 'kaige', 'jia', 'zhangke',
+                    'lou', 'ye', 'wang', 'xiaoshuai', 'ning', 'hao', 'feng', 'xiaogang', 'zhang', 'yuan',
+                    'wang', 'bing', 'liu', 'bing', 'chen', 'kaige', 'zhang', 'yimou', 'ang', 'lee',
+                    'wong', 'kar', 'wai', 'mira', 'nair', 'deepa', 'mehta', 'gurinder', 'chadha', 'satyajit', 'ray',
+                    'akira', 'kurosawa', 'ingmar', 'bergman', 'federico', 'fellini', 'stanley', 'kubrick',
+                    'alfred', 'hitchcock', 'francis', 'ford', 'coppola', 'george', 'lucas', 'james', 'cameron',
+                    'steven', 'spielberg', 'martin', 'scorsese', 'quentin', 'tarantino', 'christopher', 'nolan',
+                    'james', 'gunn', 'brendan', 'eich', 'rasmus', 'lerdorf', 'yukihiro', 'matsumoto',
+                    'guido', 'van', 'rossum', 'bjarne', 'stroustrup', 'james', 'gosling', 'richard', 'stallman',
+                    'linus', 'torvalds', 'brian', 'kernighan', 'ken', 'thompson', 'dennis', 'ritchie',
+                    'edsger', 'dijkstra', 'donald', 'knuth', 'seymour', 'papert', 'marvin', 'minsky',
+                    'claude', 'shannon', 'john', 'von', 'neumann', 'alan', 'turing', 'grace', 'hopper',
+                    'ada', 'lovelace', 'fei', 'li', 'andrew', 'ng', 'geoffrey', 'hinton', 'yann', 'lecun',
+                    'demis', 'hassabis', 'dario', 'amodei', 'sam', 'altman', 'naval', 'ravikant',
+                    'chamath', 'palihapitiya', 'reid', 'hoffman', 'peter', 'thiel', 'marc', 'andreessen',
+                    'ron', 'conway', 'paul', 'sciarra', 'evan', 'sharp', 'ben', 'silbermann',
+                    'arash', 'ferdowsi', 'drew', 'houston', 'brian', 'acton', 'jan', 'koum',
+                    'mike', 'krieger', 'kevin', 'systrom', 'bobby', 'murphy', 'evan', 'spiegel',
+                    'travis', 'kalanick', 'brian', 'chesky', 'reed', 'hastings', 'steve', 'ballmer',
+                    'paul', 'allen', 'michael', 'dell', 'larry', 'ellison', 'masayoshi', 'son',
+                    'jack', 'ma', 'warren', 'buffett', 'sergey', 'brin', 'larry', 'page', 'tim', 'cook',
+                    'satya', 'nadella', 'sundar', 'pichai', 'jeff', 'bezos', 'mark', 'zuckerberg',
+                    'steve', 'jobs', 'bill', 'gates', 'musk', 'elon'
+                ];
+                
+                // If this looks like a famous person's name, don't treat it as user's name
+                if (famousNames.includes(cleanMessage.toLowerCase())) {
+                    return null; // Let it go to search instead
+                }
+                
+                // Additional check: if this is a single word and could be a search query,
+                // be more conservative about treating it as a name
+                if (cleanMessage.length <= 8) {
+                    // For short words, only treat as name if it's clearly a name context
+                    // or if the user has explicitly said it's their name
+                    return null; // Let it go to search instead
+                }
+                
                 this.userMemory.name = cleanMessage;
-            return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
+                return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
             }
         }
         
