@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ven - AI Assistant</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -54,15 +54,25 @@
                 <div class="chat-input-area">
                     <div class="input-container">
                         <div class="input-wrapper">
+                            <div class="input-tools">
+                                <button class="tool-btn">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                             <textarea 
                                 id="messageInput" 
-                                placeholder="Message Ven..." 
+                                placeholder="Ask anything..." 
                                 rows="1"
                                 autocomplete="off"
                             ></textarea>
-                            <button id="sendButton" class="send-button" disabled>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
+                            <div class="input-actions">
+                                <button class="action-btn">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <button id="sendButton" class="send-button" disabled>
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="input-footer">
                             <span class="disclaimer">Ven can make mistakes. Consider checking important information.</span>
