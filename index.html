@@ -9,9 +9,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Hamburger Menu Button -->
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <button class="new-chat-btn">
                     <i class="fas fa-plus"></i>
@@ -20,7 +26,9 @@
             </div>
             <div class="sidebar-content">
                 <div class="chat-history">
-                    <!-- Chat history items would go here -->
+                    <div class="chat-list" id="chatList">
+                        <!-- Chat history items will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
             <div class="sidebar-footer">
@@ -34,21 +42,10 @@
         </div>
 
         <!-- Main Chat Area -->
-        <div class="main-content">
+        <div class="main-content" id="mainContent">
             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
-                    <div class="message bot-message">
-                        <div class="message-wrapper">
-                            <div class="message-avatar">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <div class="message-content">
-                                <div class="message-text">
-                                    Hello! I'm Ven, your AI assistant. How can I help you today?
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Messages will be populated by JavaScript -->
                 </div>
                 
                 <div class="chat-input-area">
