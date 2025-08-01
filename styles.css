@@ -158,8 +158,9 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     margin: 0 4px;
 }
 
@@ -169,6 +170,14 @@ body {
 
 .chat-item.active {
     background: #40414f;
+}
+
+.chat-item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
 }
 
 .chat-title {
@@ -185,6 +194,38 @@ body {
     font-size: 11px;
     color: #8e8ea0;
     line-height: 1.2;
+}
+
+.delete-chat-btn {
+    background: transparent;
+    border: none;
+    color: #8e8ea0;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.chat-item:hover .delete-chat-btn {
+    opacity: 1;
+}
+
+.delete-chat-btn:hover {
+    color: #ef4444;
+}
+
+/* Show delete button by default on mobile devices */
+@media (max-width: 768px) {
+    .delete-chat-btn {
+        opacity: 1;
+    }
 }
 
 .sidebar-footer {
@@ -227,7 +268,7 @@ body {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 40px 0 25px 0; /* Increased top padding */
+    padding: 40px 0 120px 0; /* Increased bottom padding to prevent overlap with input area */
     scroll-behavior: smooth;
     position: relative;
     background: transparent;
