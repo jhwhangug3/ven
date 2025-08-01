@@ -503,10 +503,23 @@ class Chatbot {
             }
         }
         
-        // Handle direct name responses (just a name)
-        if (/^[a-zA-Z]+$/.test(message.trim()) && message.trim().length >= 2 && message.trim().length <= 20) {
-            this.userMemory.name = message.trim();
-            return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
+        // Handle direct name responses (just a name) - but only if it's a reasonable name
+        const cleanMessage = message.trim();
+        if (/^[a-zA-Z]+$/.test(cleanMessage) && cleanMessage.length >= 2 && cleanMessage.length <= 20) {
+            // Only treat as name if it's not a common word or command
+            const commonWords = [
+                'hi', 'hello', 'hey', 'bye', 'goodbye', 'thanks', 'thank', 'yes', 'no', 'ok', 'okay',
+                'what', 'how', 'why', 'when', 'where', 'who', 'which', 'math', 'help', 'search',
+                'translate', 'calculate', 'solve', 'find', 'tell', 'me', 'about', 'the', 'and', 'or',
+                'but', 'for', 'with', 'from', 'to', 'in', 'on', 'at', 'by', 'of', 'a', 'an', 'is',
+                'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does',
+                'did', 'will', 'would', 'could', 'should', 'can', 'may', 'might', 'must', 'shall'
+            ];
+            
+            if (!commonWords.includes(cleanMessage.toLowerCase())) {
+                this.userMemory.name = cleanMessage;
+                return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
+            }
         }
         
         // Handle age updates
