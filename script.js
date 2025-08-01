@@ -196,14 +196,16 @@ class Chatbot {
                         this.addOverlay();
                         // Hide chat input area when sidebar is open on mobile
                         if (chatInputArea) {
-                            chatInputArea.style.display = 'none';
+                            chatInputArea.style.visibility = 'hidden';
+                            chatInputArea.style.opacity = '0';
                         }
                     } else {
                         hamburgerMenu.style.transform = 'translateX(0)';
                         this.removeOverlay();
                         // Show chat input area when sidebar is closed on mobile
                         if (chatInputArea) {
-                            chatInputArea.style.display = 'flex';
+                            chatInputArea.style.visibility = 'visible';
+                            chatInputArea.style.opacity = '1';
                         }
                     }
                 }
@@ -223,7 +225,8 @@ class Chatbot {
                     this.removeOverlay();
                     // Show chat input area when sidebar is closed
                     if (chatInputArea) {
-                        chatInputArea.style.display = 'flex';
+                        chatInputArea.style.visibility = 'visible';
+                        chatInputArea.style.opacity = '1';
                     }
                 }
             });
@@ -232,8 +235,16 @@ class Chatbot {
             const ensureChatInputVisibility = () => {
                 if (window.innerWidth <= 768 && chatInputArea) {
                     if (!sidebar.classList.contains('open')) {
-                        chatInputArea.style.display = 'flex';
+                        chatInputArea.style.visibility = 'visible';
+                        chatInputArea.style.opacity = '1';
+                    } else {
+                        chatInputArea.style.visibility = 'hidden';
+                        chatInputArea.style.opacity = '0';
                     }
+                } else if (chatInputArea) {
+                    // On desktop, always show the chat input area
+                    chatInputArea.style.visibility = 'visible';
+                    chatInputArea.style.opacity = '1';
                 }
             };
             
@@ -270,6 +281,13 @@ class Chatbot {
                     document.getElementById('hamburgerMenu').style.transform = 'translateX(0)';
                 }
                 this.removeOverlay();
+                
+                // Show chat input area when sidebar is closed
+                const chatInputArea = document.querySelector('.chat-input-area');
+                if (chatInputArea && window.innerWidth <= 768) {
+                    chatInputArea.style.visibility = 'visible';
+                    chatInputArea.style.opacity = '1';
+                }
             });
         }
     }
