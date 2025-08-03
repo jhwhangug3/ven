@@ -130,6 +130,18 @@ class Chatbot {
             facts: []
         };
         
+        // User authentication system
+        this.currentUser = null;
+        this.isLoggedIn = false;
+        
+        // Customization settings
+        this.customizationSettings = {
+            responseStyle: 'friendly', // casual, friendly, formal, creative
+            includeEmojis: true,
+            detailedExplanations: false,
+            lightMode: false
+        };
+        
         // Chat history for storage
         this.chatHistory = [];
         this.currentChatId = null;
@@ -143,6 +155,9 @@ class Chatbot {
         
         // Load saved chat history and user memory
         this.loadFromStorage();
+        
+        // Load user data FIRST (before initializing UI)
+        this.loadUserData();
         
         // Initialize hamburger menu
         this.initHamburgerMenu();
@@ -171,6 +186,17 @@ class Chatbot {
         
         // New chat functionality
         this.initNewChat();
+        
+        // Initialize user menu
+        this.initUserMenu();
+        
+        // Initialize login system
+        this.initLoginSystem();
+        
+        // Ensure user interface is updated after everything is initialized
+        setTimeout(() => {
+            this.updateUserInterface();
+        }, 200);
         
         // Focus on input when page loads
         this.messageInput.focus();
@@ -522,10 +548,15 @@ class Chatbot {
             // Get bot response (now async)
             const response = await this.getBotResponse(message);
             this.hideTypingIndicator();
-            this.addMessage(response, 'bot');
+            
+            // Apply customization styling to the response
+            const styledResponse = this.applyResponseStyle(response);
+            this.addMessage(styledResponse, 'bot');
         } catch (error) {
             this.hideTypingIndicator();
-            this.addMessage("I'm sorry, I encountered an error while searching for information. Please try again.", 'bot');
+            const errorMessage = "I'm sorry, I encountered an error while searching for information. Please try again.";
+            const styledError = this.applyResponseStyle(errorMessage);
+            this.addMessage(styledError, 'bot');
         }
     }
     
@@ -2029,6 +2060,922 @@ class Chatbot {
         sidebarNewChatBtn.addEventListener('click', () => {
             this.startNewChat();
         });
+    }
+    
+    initUserMenu() {
+        const userButton = document.getElementById('userButton');
+        const userMenu = document.getElementById('userMenu');
+        
+        if (userButton && userMenu) {
+            userButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userMenu.classList.toggle('show');
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userMenu.contains(e.target) && !userButton.contains(e.target)) {
+                    userMenu.classList.remove('show');
+                }
+            });
+            
+            // Close menu when pressing Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    userMenu.classList.remove('show');
+                }
+            });
+            
+            // Handle menu option clicks
+            this.initMenuOptions();
+        }
+    }
+    
+    initMenuOptions() {
+        const customizeOption = document.getElementById('customizeOption');
+        const settingsOption = document.getElementById('settingsOption');
+        const editProfileOption = document.getElementById('editProfileOption');
+        const loginLogoutOption = document.getElementById('loginLogoutOption');
+        
+        if (customizeOption) {
+            customizeOption.addEventListener('click', () => {
+                this.handleCustomizeVen();
+            });
+        }
+        
+        if (settingsOption) {
+            settingsOption.addEventListener('click', () => {
+                this.handleSettings();
+            });
+        }
+        
+        if (editProfileOption) {
+            editProfileOption.addEventListener('click', () => {
+                this.handleEditProfile();
+            });
+        }
+        
+        if (loginLogoutOption) {
+            loginLogoutOption.addEventListener('click', () => {
+                this.handleLoginLogout();
+            });
+        }
+    }
+    
+    handleCustomizeVen() {
+        // Close the menu
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu) {
+            userMenu.classList.remove('show');
+        }
+        
+        this.showCustomizeModal();
+    }
+    
+    handleSettings() {
+        // Close the menu
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu) {
+            userMenu.classList.remove('show');
+        }
+        
+        this.showSettingsModal();
+    }
+    
+    handleLoginLogout() {
+        // Close the menu
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu) {
+            userMenu.classList.remove('show');
+        }
+        
+        if (this.isLoggedIn) {
+            this.logout();
+        } else {
+            this.showLoginModal();
+        }
+    }
+    
+    handleEditProfile() {
+        // Close the menu
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu) {
+            userMenu.classList.remove('show');
+        }
+        
+        this.showEditProfileModal();
+    }
+    
+    initLoginSystem() {
+        const loginModal = document.getElementById('loginModal');
+        const closeLoginModal = document.getElementById('closeLoginModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupLink = document.getElementById('signupLink');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const profileImage = document.getElementById('profileImage');
+        
+        // Close modal when clicking close button
+        if (closeLoginModal) {
+            closeLoginModal.addEventListener('click', () => {
+                this.hideLoginModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (loginModal) {
+            loginModal.addEventListener('click', (e) => {
+                if (e.target === loginModal) {
+                    this.hideLoginModal();
+                }
+            });
+        }
+        
+        // Handle login button click
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.handleLogin();
+            });
+        }
+        
+        // Handle signup link click
+        if (signupLink) {
+            signupLink.addEventListener('click', () => {
+                this.toggleLoginSignup();
+            });
+        }
+        
+        // Handle profile image upload
+        if (uploadBtn && profileImage) {
+            uploadBtn.addEventListener('click', () => {
+                profileImage.click();
+            });
+            
+            profileImage.addEventListener('change', (e) => {
+                this.handleProfileImageUpload(e);
+            });
+        }
+        
+        // Initialize edit profile system
+        this.initEditProfileSystem();
+        
+        // Initialize customization system
+        this.initCustomizationSystem();
+        
+        // Initialize settings system
+        this.initSettingsSystem();
+    }
+    
+    initEditProfileSystem() {
+        const editProfileModal = document.getElementById('editProfileModal');
+        const closeEditProfileModal = document.getElementById('closeEditProfileModal');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+        const editUploadBtn = document.getElementById('editUploadBtn');
+        const editProfileImage = document.getElementById('editProfileImage');
+        
+        // Close modal when clicking close button
+        if (closeEditProfileModal) {
+            closeEditProfileModal.addEventListener('click', () => {
+                this.hideEditProfileModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (editProfileModal) {
+            editProfileModal.addEventListener('click', (e) => {
+                if (e.target === editProfileModal) {
+                    this.hideEditProfileModal();
+                }
+            });
+        }
+        
+        // Handle save profile button click
+        if (saveProfileBtn) {
+            saveProfileBtn.addEventListener('click', () => {
+                this.handleSaveProfile();
+            });
+        }
+        
+        // Handle edit profile image upload
+        if (editUploadBtn && editProfileImage) {
+            editUploadBtn.addEventListener('click', () => {
+                editProfileImage.click();
+            });
+            
+            editProfileImage.addEventListener('change', (e) => {
+                this.handleEditProfileImageUpload(e);
+            });
+        }
+    }
+    
+    showLoginModal() {
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+            loginModal.classList.add('show');
+            this.resetLoginForm();
+        }
+    }
+    
+    resetLoginForm() {
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const userPassword = document.getElementById('userPassword');
+        const profilePreview = document.getElementById('profilePreview');
+        
+        if (userName) userName.value = '';
+        if (userEmail) userEmail.value = '';
+        if (userPassword) userPassword.value = '';
+        if (profilePreview) profilePreview.innerHTML = '<i class="fas fa-user"></i>';
+        
+        this.profileImageData = null;
+        this.isSignupMode = false;
+        
+        // Reset form to login mode
+        const loginBtn = document.getElementById('loginBtn');
+        const signupLink = document.getElementById('signupLink');
+        const loginHeader = document.querySelector('.login-header h2');
+        
+        if (loginHeader) loginHeader.textContent = 'Login to Ven';
+        if (loginBtn) loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+        if (signupLink) signupLink.textContent = 'Sign up';
+    }
+    
+    showEditProfileModal() {
+        const editProfileModal = document.getElementById('editProfileModal');
+        if (editProfileModal) {
+            editProfileModal.classList.add('show');
+            this.populateEditProfileForm();
+        }
+    }
+    
+    hideEditProfileModal() {
+        const editProfileModal = document.getElementById('editProfileModal');
+        if (editProfileModal) {
+            editProfileModal.classList.remove('show');
+        }
+    }
+    
+    populateEditProfileForm() {
+        if (!this.currentUser) return;
+        
+        const editUserName = document.getElementById('editUserName');
+        const editUserEmail = document.getElementById('editUserEmail');
+        const editProfilePreview = document.getElementById('editProfilePreview');
+        
+        if (editUserName) editUserName.value = this.currentUser.name;
+        if (editUserEmail) editUserEmail.value = this.currentUser.email;
+        
+        if (editProfilePreview) {
+            if (this.currentUser.profileImage) {
+                editProfilePreview.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile">`;
+            } else {
+                editProfilePreview.innerHTML = '<i class="fas fa-user"></i>';
+            }
+        }
+        
+        // Reset the edit profile image data
+        this.editProfileImageData = null;
+    }
+    
+    handleEditProfileImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const editProfilePreview = document.getElementById('editProfilePreview');
+                if (editProfilePreview) {
+                    editProfilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile">`;
+                }
+                this.editProfileImageData = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    handleSaveProfile() {
+        const editUserName = document.getElementById('editUserName');
+        const editUserEmail = document.getElementById('editUserEmail');
+        
+        const newName = editUserName ? editUserName.value.trim() : '';
+        const newEmail = editUserEmail ? editUserEmail.value.trim() : '';
+        
+        if (!newName || !newEmail) {
+            this.addMessage("Please fill in all fields.", 'bot');
+            return;
+        }
+        
+        if (!this.isValidEmail(newEmail)) {
+            this.addMessage("Please enter a valid email address.", 'bot');
+            return;
+        }
+        
+        // Update user data
+        this.currentUser.name = newName;
+        this.currentUser.email = newEmail;
+        
+        // Update profile image if changed
+        if (this.editProfileImageData) {
+            this.currentUser.profileImage = this.editProfileImageData;
+        }
+        
+        // Save updated data
+        this.saveUserData();
+        this.updateUserInterface();
+        this.hideEditProfileModal();
+        
+        this.addMessage(`Profile updated successfully! Your name is now ${newName}.`, 'bot');
+    }
+    
+    initCustomizationSystem() {
+        const customizeModal = document.getElementById('customizeModal');
+        const closeCustomizeModal = document.getElementById('closeCustomizeModal');
+        const saveCustomizationBtn = document.getElementById('saveCustomizationBtn');
+        
+        // Close modal when clicking close button
+        if (closeCustomizeModal) {
+            closeCustomizeModal.addEventListener('click', () => {
+                this.hideCustomizeModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (customizeModal) {
+            customizeModal.addEventListener('click', (e) => {
+                if (e.target === customizeModal) {
+                    this.hideCustomizeModal();
+                }
+            });
+        }
+        
+        // Handle save customization button click
+        if (saveCustomizationBtn) {
+            saveCustomizationBtn.addEventListener('click', () => {
+                this.handleSaveCustomization();
+            });
+        }
+        
+        // Load saved customization settings
+        this.loadCustomizationSettings();
+    }
+    
+    showCustomizeModal() {
+        const customizeModal = document.getElementById('customizeModal');
+        if (customizeModal) {
+            customizeModal.classList.add('show');
+            this.populateCustomizationForm();
+        }
+    }
+    
+    hideCustomizeModal() {
+        const customizeModal = document.getElementById('customizeModal');
+        if (customizeModal) {
+            customizeModal.classList.remove('show');
+        }
+    }
+    
+    populateCustomizationForm() {
+        // Set the selected style option
+        const styleOptions = document.querySelectorAll('.style-option');
+        styleOptions.forEach(option => {
+            option.classList.remove('selected');
+            if (option.dataset.style === this.customizationSettings.responseStyle) {
+                option.classList.add('selected');
+            }
+        });
+        
+        // Set toggle states
+        const emojiToggle = document.getElementById('emojiToggle');
+        const detailedToggle = document.getElementById('detailedToggle');
+        
+        if (emojiToggle) emojiToggle.checked = this.customizationSettings.includeEmojis;
+        if (detailedToggle) detailedToggle.checked = this.customizationSettings.detailedExplanations;
+        
+        // Add click handlers for style options
+        styleOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                styleOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+    }
+    
+    handleSaveCustomization() {
+        // Get selected style
+        const selectedStyle = document.querySelector('.style-option.selected');
+        const style = selectedStyle ? selectedStyle.dataset.style : 'friendly';
+        
+        // Get toggle states
+        const emojiToggle = document.getElementById('emojiToggle');
+        const detailedToggle = document.getElementById('detailedToggle');
+        
+        const includeEmojis = emojiToggle ? emojiToggle.checked : true;
+        const detailedExplanations = detailedToggle ? detailedToggle.checked : false;
+        
+        // Update settings
+        this.customizationSettings = {
+            responseStyle: style,
+            includeEmojis: includeEmojis,
+            detailedExplanations: detailedExplanations
+        };
+        
+        // Save settings
+        this.saveCustomizationSettings();
+        this.hideCustomizeModal();
+        
+        this.addMessage(`Customization saved! Ven will now respond in ${style} style.`, 'bot');
+    }
+    
+    saveCustomizationSettings() {
+        try {
+            localStorage.setItem('venCustomization', JSON.stringify(this.customizationSettings));
+        } catch (error) {
+            console.error('Error saving customization settings:', error);
+        }
+    }
+    
+    loadCustomizationSettings() {
+        try {
+            const savedSettings = localStorage.getItem('venCustomization');
+            if (savedSettings) {
+                this.customizationSettings = { ...this.customizationSettings, ...JSON.parse(savedSettings) };
+            }
+            
+            // Apply theme on load
+            this.applyTheme(this.customizationSettings.lightMode);
+        } catch (error) {
+            console.error('Error loading customization settings:', error);
+        }
+    }
+    
+    toggleTheme(isLightMode) {
+        this.applyTheme(isLightMode);
+        this.customizationSettings.lightMode = isLightMode;
+        this.saveCustomizationSettings();
+    }
+    
+    applyTheme(isLightMode) {
+        const body = document.body;
+        if (isLightMode) {
+            body.classList.add('light-mode');
+        } else {
+            body.classList.remove('light-mode');
+        }
+    }
+    
+    initSettingsSystem() {
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        
+        // Close modal when clicking close button
+        if (closeSettingsModal) {
+            closeSettingsModal.addEventListener('click', () => {
+                this.hideSettingsModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    this.hideSettingsModal();
+                }
+            });
+        }
+        
+        // Handle save settings button click
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => {
+                this.handleSaveSettings();
+            });
+        }
+        
+        // Load saved settings
+        this.loadSettings();
+    }
+    
+    showSettingsModal() {
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) {
+            settingsModal.classList.add('show');
+            this.populateSettingsForm();
+        }
+    }
+    
+    hideSettingsModal() {
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) {
+            settingsModal.classList.remove('show');
+        }
+    }
+    
+    populateSettingsForm() {
+        // Set toggle states
+        const themeToggle = document.getElementById('settingsThemeToggle');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const dataCollectionToggle = document.getElementById('dataCollectionToggle');
+        
+        if (themeToggle) themeToggle.checked = this.customizationSettings.lightMode;
+        if (autoScrollToggle) autoScrollToggle.checked = this.settings?.autoScroll ?? true;
+        if (soundToggle) soundToggle.checked = this.settings?.soundNotifications ?? false;
+        if (dataCollectionToggle) dataCollectionToggle.checked = this.settings?.dataCollection ?? false;
+        
+        // Add theme toggle handler
+        if (themeToggle) {
+            themeToggle.addEventListener('change', () => {
+                this.toggleTheme(themeToggle.checked);
+            });
+        }
+    }
+    
+    handleSaveSettings() {
+        // Get toggle states
+        const themeToggle = document.getElementById('settingsThemeToggle');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const dataCollectionToggle = document.getElementById('dataCollectionToggle');
+        
+        const lightMode = themeToggle ? themeToggle.checked : false;
+        const autoScroll = autoScrollToggle ? autoScrollToggle.checked : true;
+        const soundNotifications = soundToggle ? soundToggle.checked : false;
+        const dataCollection = dataCollectionToggle ? dataCollectionToggle.checked : false;
+        
+        // Update settings
+        this.customizationSettings.lightMode = lightMode;
+        this.settings = {
+            autoScroll: autoScroll,
+            soundNotifications: soundNotifications,
+            dataCollection: dataCollection
+        };
+        
+        // Save settings
+        this.saveSettings();
+        this.hideSettingsModal();
+        
+        this.addMessage("Settings saved successfully!", 'bot');
+    }
+    
+    saveSettings() {
+        try {
+            localStorage.setItem('venSettings', JSON.stringify(this.settings));
+            this.saveCustomizationSettings();
+        } catch (error) {
+            console.error('Error saving settings:', error);
+        }
+    }
+    
+    loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem('venSettings');
+            if (savedSettings) {
+                this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+            } else {
+                this.settings = {
+                    autoScroll: true,
+                    soundNotifications: false,
+                    dataCollection: false
+                };
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = {
+                autoScroll: true,
+                soundNotifications: false,
+                dataCollection: false
+            };
+        }
+    }
+    
+    applyResponseStyle(message) {
+        const style = this.customizationSettings.responseStyle;
+        const includeEmojis = this.customizationSettings.includeEmojis;
+        
+        let styledMessage = message;
+        
+        switch (style) {
+            case 'casual':
+                styledMessage = this.applyCasualStyle(message, includeEmojis);
+                break;
+            case 'friendly':
+                styledMessage = this.applyFriendlyStyle(message, includeEmojis);
+                break;
+            case 'formal':
+                styledMessage = this.applyFormalStyle(message, includeEmojis);
+                break;
+            case 'creative':
+                styledMessage = this.applyCreativeStyle(message, includeEmojis);
+                break;
+            default:
+                styledMessage = this.applyFriendlyStyle(message, includeEmojis);
+        }
+        
+        return styledMessage;
+    }
+    
+    applyCasualStyle(message, includeEmojis) {
+        let styled = message;
+        
+        // Add casual language patterns
+        styled = styled.replace(/Hello/g, includeEmojis ? 'Hey there! 👋' : 'Hey there!');
+        styled = styled.replace(/Thank you/g, includeEmojis ? 'Thanks! 🙏' : 'Thanks!');
+        styled = styled.replace(/You're welcome/g, includeEmojis ? 'No problem! 😊' : 'No problem!');
+        styled = styled.replace(/I'm sorry/g, includeEmojis ? 'Sorry about that 😅' : 'Sorry about that');
+        styled = styled.replace(/That's great/g, includeEmojis ? 'That\'s awesome! 🔥' : 'That\'s awesome!');
+        styled = styled.replace(/Goodbye/g, includeEmojis ? 'See ya! 👋' : 'See ya!');
+        
+        // Add casual expressions
+        if (includeEmojis && !styled.includes('😊') && !styled.includes('🔥') && !styled.includes('👋')) {
+            styled += ' 😊';
+        }
+        
+        return styled;
+    }
+    
+    applyFriendlyStyle(message, includeEmojis) {
+        let styled = message;
+        
+        // Add friendly language patterns
+        styled = styled.replace(/Hello/g, includeEmojis ? 'Hello! 😊' : 'Hello!');
+        styled = styled.replace(/Thank you/g, includeEmojis ? 'You\'re welcome! 😊' : 'You\'re welcome!');
+        styled = styled.replace(/I'm sorry/g, includeEmojis ? 'I apologize 😔' : 'I apologize');
+        styled = styled.replace(/That's great/g, includeEmojis ? 'That\'s wonderful! 😊' : 'That\'s wonderful!');
+        styled = styled.replace(/Goodbye/g, includeEmojis ? 'Take care! 😊' : 'Take care!');
+        
+        return styled;
+    }
+    
+    applyFormalStyle(message, includeEmojis) {
+        let styled = message;
+        
+        // Add formal language patterns
+        styled = styled.replace(/Hello/g, 'Greetings');
+        styled = styled.replace(/Thank you/g, 'You have my gratitude');
+        styled = styled.replace(/You're welcome/g, 'It is my pleasure');
+        styled = styled.replace(/I'm sorry/g, 'I sincerely apologize');
+        styled = styled.replace(/That's great/g, 'That is excellent');
+        styled = styled.replace(/Goodbye/g, 'Farewell');
+        
+        return styled;
+    }
+    
+    applyCreativeStyle(message, includeEmojis) {
+        let styled = message;
+        
+        // Add creative language patterns
+        styled = styled.replace(/Hello/g, includeEmojis ? 'Greetings, fellow explorer! 🌟' : 'Greetings, fellow explorer!');
+        styled = styled.replace(/Thank you/g, includeEmojis ? 'My gratitude flows like a river! 🌊' : 'My gratitude flows like a river!');
+        styled = styled.replace(/You're welcome/g, includeEmojis ? 'The pleasure is all mine, dear friend! ✨' : 'The pleasure is all mine, dear friend!');
+        styled = styled.replace(/I'm sorry/g, includeEmojis ? 'My heart aches with regret 💔' : 'My heart aches with regret');
+        styled = styled.replace(/That's great/g, includeEmojis ? 'That\'s absolutely magnificent! 🌈' : 'That\'s absolutely magnificent!');
+        styled = styled.replace(/Goodbye/g, includeEmojis ? 'Until we meet again, brave soul! 🌙' : 'Until we meet again, brave soul!');
+        
+        return styled;
+    }
+    
+    hideLoginModal() {
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+            loginModal.classList.remove('show');
+        }
+    }
+    
+    toggleLoginSignup() {
+        const loginBtn = document.getElementById('loginBtn');
+        const signupLink = document.getElementById('signupLink');
+        const loginHeader = document.querySelector('.login-header h2');
+        
+        if (this.isSignupMode) {
+            // Switch to login mode
+            this.isSignupMode = false;
+            loginHeader.textContent = 'Login to Ven';
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            signupLink.textContent = 'Sign up';
+        } else {
+            // Switch to signup mode
+            this.isSignupMode = true;
+            loginHeader.textContent = 'Sign up for Ven';
+            loginBtn.innerHTML = '<i class="fas fa-user-plus"></i> Sign up';
+            signupLink.textContent = 'Login';
+        }
+    }
+    
+    handleProfileImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const profilePreview = document.getElementById('profilePreview');
+                if (profilePreview) {
+                    profilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile">`;
+                }
+                this.profileImageData = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    handleLogin() {
+        const userName = document.getElementById('userName').value.trim();
+        const userEmail = document.getElementById('userEmail').value.trim();
+        const userPassword = document.getElementById('userPassword').value.trim();
+        
+        if (!userName || !userEmail || !userPassword) {
+            this.addMessage("Please fill in all fields.", 'bot');
+            return;
+        }
+        
+        if (!this.isValidEmail(userEmail)) {
+            this.addMessage("Please enter a valid email address.", 'bot');
+            return;
+        }
+        
+        // Create user object
+        const user = {
+            name: userName,
+            email: userEmail,
+            password: userPassword, // In a real app, this would be hashed
+            profileImage: this.profileImageData || null,
+            createdAt: new Date().toISOString()
+        };
+        
+        if (this.isSignupMode) {
+            // Sign up
+            this.signup(user);
+        } else {
+            // Login
+            this.login(user);
+        }
+    }
+    
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    signup(user) {
+        // In a real app, this would save to a database
+        this.currentUser = user;
+        this.isLoggedIn = true;
+        this.saveUserData();
+        this.updateUserInterface();
+        this.hideLoginModal();
+        this.addMessage(`Welcome to Ven, ${user.name}! Your account has been created successfully.`, 'bot');
+    }
+    
+    login(user) {
+        // In a real app, this would validate against a database
+        // For now, we'll just simulate a successful login
+        this.currentUser = user;
+        this.isLoggedIn = true;
+        this.saveUserData();
+        this.updateUserInterface();
+        this.hideLoginModal();
+        this.addMessage(`Welcome back, ${user.name}! You've been logged in successfully.`, 'bot');
+    }
+    
+    logout() {
+        this.currentUser = null;
+        this.isLoggedIn = false;
+        this.saveUserData();
+        this.updateUserInterface();
+        this.addMessage("You've been logged out successfully.", 'bot');
+    }
+    
+    saveUserData() {
+        try {
+            const userData = {
+                currentUser: this.currentUser,
+                isLoggedIn: this.isLoggedIn
+            };
+            localStorage.setItem('venUserData', JSON.stringify(userData));
+            console.log('User data saved:', userData);
+        } catch (error) {
+            console.error('Error saving user data:', error);
+        }
+    }
+    
+    loadUserData() {
+        try {
+            const savedData = localStorage.getItem('venUserData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                this.currentUser = data.currentUser;
+                this.isLoggedIn = data.isLoggedIn;
+                
+                // Update interface immediately after loading data
+                setTimeout(() => {
+                    this.updateUserInterface();
+                }, 100); // Small delay to ensure DOM is ready
+                
+                console.log('User data loaded:', this.currentUser);
+            } else {
+                console.log('No saved user data found');
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            // Reset to default state if there's an error
+            this.currentUser = null;
+            this.isLoggedIn = false;
+        }
+    }
+    
+    updateUserInterface() {
+        const loginLogoutOption = document.getElementById('loginLogoutOption');
+        const editProfileOption = document.getElementById('editProfileOption');
+        const userInfo = document.querySelector('.user-info');
+        const userButton = document.getElementById('userButton');
+        
+        if (this.isLoggedIn && this.currentUser) {
+            // Update login/logout button
+            if (loginLogoutOption) {
+                loginLogoutOption.innerHTML = '<i class="fas fa-sign-out-alt"></i><span>Logout</span>';
+            }
+            
+            // Show edit profile option when logged in
+            if (editProfileOption) {
+                editProfileOption.style.display = 'flex';
+            }
+            
+            // Update user info in sidebar
+            if (userInfo) {
+                const userAvatar = userInfo.querySelector('.user-avatar');
+                const userName = userInfo.querySelector('span');
+                
+                if (userAvatar) {
+                    if (this.currentUser.profileImage) {
+                        userAvatar.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">`;
+                    } else {
+                        // Create initials from name
+                        const initials = this.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                        userAvatar.innerHTML = `<span style="color: #ececf1; font-weight: 600;">${initials}</span>`;
+                    }
+                }
+                
+                if (userName) {
+                    userName.textContent = this.currentUser.name;
+                }
+            }
+            
+            // Update user button title for accessibility
+            if (userButton) {
+                userButton.title = `Logged in as ${this.currentUser.name}`;
+            }
+            
+            // Update page title to include user name
+            document.title = `Ven - ${this.currentUser.name}`;
+            
+        } else {
+            // Reset to default state
+            if (loginLogoutOption) {
+                loginLogoutOption.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>Login</span>';
+            }
+            
+            // Hide edit profile option when not logged in
+            if (editProfileOption) {
+                editProfileOption.style.display = 'none';
+            }
+            
+            if (userInfo) {
+                const userAvatar = userInfo.querySelector('.user-avatar');
+                const userName = userInfo.querySelector('span');
+                
+                if (userAvatar) {
+                    userAvatar.innerHTML = '<i class="fas fa-user"></i>';
+                }
+                
+                if (userName) {
+                    userName.textContent = 'User';
+                }
+            }
+            
+            // Reset user button title
+            if (userButton) {
+                userButton.title = 'User menu';
+            }
+            
+            // Reset page title
+            document.title = 'Ven - AI Assistant';
+        }
+        
+        // Update any other user-related elements
+        this.updateUserRelatedElements();
+    }
+    
+    updateUserRelatedElements() {
+        // Update any messages that might reference the user
+        if (this.isLoggedIn && this.currentUser) {
+            // Update user memory with the logged-in user's name
+            if (!this.userMemory.name) {
+                this.userMemory.name = this.currentUser.name;
+            }
+            
+            // Update any existing user references in the chat
+            const userMessages = document.querySelectorAll('.message.user .message-content');
+            userMessages.forEach(message => {
+                // This could be used to update any user-specific content
+                // For now, we'll just ensure the user context is maintained
+            });
+        }
     }
     
 
