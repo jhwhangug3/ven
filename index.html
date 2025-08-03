@@ -31,11 +31,34 @@
                 </div>
             </div>
             <div class="sidebar-footer">
-                <div class="user-info">
+                <div class="user-info" id="userButton">
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
                     <span>User</span>
+                </div>
+            </div>
+            
+            <!-- User Menu Popup -->
+            <div class="user-menu" id="userMenu">
+                <div class="user-menu-options">
+                    <div class="menu-option" id="customizeOption">
+                        <i class="fas fa-palette"></i>
+                        <span>Customize Ven</span>
+                    </div>
+                    <div class="menu-option" id="settingsOption">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="menu-option" id="editProfileOption" style="display: none;">
+                        <i class="fas fa-user-edit"></i>
+                        <span>Edit Profile</span>
+                    </div>
+                    <div class="menu-divider"></div>
+                    <div class="menu-option" id="loginLogoutOption">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -75,6 +98,229 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>Login to Ven</h2>
+                <button class="close-btn" id="closeLoginModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="login-form">
+                <div class="profile-upload">
+                    <div class="profile-preview" id="profilePreview">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <input type="file" id="profileImage" accept="image/*" style="display: none;">
+                    <button class="upload-btn" id="uploadBtn">
+                        <i class="fas fa-camera"></i>
+                        Upload Photo
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label for="userName">Name</label>
+                    <input type="text" id="userName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Password</label>
+                    <input type="password" id="userPassword" placeholder="Enter your password">
+                </div>
+                <button class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+                <div class="login-footer">
+                    <span>Don't have an account? </span>
+                    <button class="signup-link" id="signupLink">Sign up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Profile Modal -->
+    <div class="login-modal" id="editProfileModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>Edit Profile</h2>
+                <button class="close-btn" id="closeEditProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="login-form">
+                <div class="profile-upload">
+                    <div class="profile-preview" id="editProfilePreview">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <input type="file" id="editProfileImage" accept="image/*" style="display: none;">
+                    <button class="upload-btn" id="editUploadBtn">
+                        <i class="fas fa-camera"></i>
+                        Change Photo
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label for="editUserName">Name</label>
+                    <input type="text" id="editUserName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="editUserEmail">Email</label>
+                    <input type="email" id="editUserEmail" placeholder="Enter your email">
+                </div>
+                <button class="login-btn" id="saveProfileBtn">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customize Ven Modal -->
+    <div class="login-modal" id="customizeModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>Customize Ven</h2>
+                <button class="close-btn" id="closeCustomizeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="login-form">
+                <div class="customization-section">
+                    <h3>Response Style</h3>
+                    <p class="section-description">Choose how Ven responds to your messages</p>
+                    
+                    <div class="style-options">
+                        <div class="style-option" data-style="casual">
+                            <div class="style-header">
+                                <i class="fas fa-fire"></i>
+                                <span class="style-title">Casual & Gen-Z</span>
+                                <div class="style-badge">Popular</div>
+                            </div>
+                            <p class="style-description">Chill, relatable responses with emojis and modern slang</p>
+                        </div>
+                        
+                        <div class="style-option" data-style="friendly">
+                            <div class="style-header">
+                                <i class="fas fa-heart"></i>
+                                <span class="style-title">Friendly & Polished</span>
+                                <div class="style-badge">Balanced</div>
+                            </div>
+                            <p class="style-description">Warm, professional responses that feel approachable</p>
+                        </div>
+                        
+                        <div class="style-option" data-style="formal">
+                            <div class="style-header">
+                                <i class="fas fa-briefcase"></i>
+                                <span class="style-title">Formal & Professional</span>
+                                <div class="style-badge">Business</div>
+                            </div>
+                            <p class="style-description">Structured, professional responses for work settings</p>
+                        </div>
+                        
+                        <div class="style-option" data-style="creative">
+                            <div class="style-header">
+                                <i class="fas fa-palette"></i>
+                                <span class="style-title">Creative & Expressive</span>
+                                <div class="style-badge">Artistic</div>
+                            </div>
+                            <p class="style-description">Imaginative responses with vivid descriptions and metaphors</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="customization-section">
+                    <h3>Additional Settings</h3>
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="emojiToggle" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Include emojis in responses</span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="detailedToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Detailed explanations</span>
+                        </label>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="login-modal" id="settingsModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettingsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="login-form">
+                <div class="customization-section">
+                    <h3>Appearance</h3>
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="settingsThemeToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Light mode</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="customization-section">
+                    <h3>Chat Settings</h3>
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="autoScrollToggle" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Auto-scroll to new messages</span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="soundToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Sound notifications</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="customization-section">
+                    <h3>Privacy</h3>
+                    <div class="setting-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="dataCollectionToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Allow data collection for improvements</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="login-btn" id="saveSettingsBtn">
+                    <i class="fas fa-save"></i>
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+                
+                <button class="login-btn" id="saveCustomizationBtn">
+                    <i class="fas fa-save"></i>
+                    Save Preferences
+                </button>
             </div>
         </div>
     </div>
