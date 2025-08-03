@@ -11,7 +11,7 @@ class Chatbot {
         this.knowledgeBase = {
             'sun': {
                 type: 'star',
-                description: 'The Sun is a star, not a planet. It is the star at the center of our Solar System, around which Earth and other planets orbit. The Sun is a massive ball of hydrogen and helium that produces energy through nuclear fusion, providing light and heat to Earth.',
+                description: 'The Sun is the star at the center of our Solar System, around which Earth and other planets orbit. It is a massive ball of hydrogen and helium that produces energy through nuclear fusion, providing light and heat to Earth.',
                 facts: [
                     'The Sun is about 93 million miles (150 million kilometers) from Earth',
                     'It is classified as a G-type main-sequence star (G2V)',
@@ -145,6 +145,15 @@ class Chatbot {
         // Chat history for storage
         this.chatHistory = [];
         this.currentChatId = null;
+        
+        // Conversation context tracking
+        this.conversationContext = {
+            currentTopic: null,
+            waitingFor: null,
+            lastQuestion: null,
+            lastResponse: null,
+            conversationHistory: []
+        };
         
         // init() will be called separately after construction
     }
@@ -439,6 +448,9 @@ class Chatbot {
         // Clear the chat display
         this.chatMessages.innerHTML = '';
         
+        // Reset conversation context for new chat
+        this.resetConversationContext();
+        
         // Add welcome message
         this.addMessage("Hello! I'm Ven, your AI assistant. How can I help you today?", 'bot');
         
@@ -563,6 +575,44 @@ class Chatbot {
     async getBotResponse(message) {
         const lowerMessage = message.toLowerCase();
         
+
+        
+        // Enhanced context understanding
+        const contextResult = this.handleContextualQuery(message);
+        if (contextResult) {
+            return contextResult;
+        }
+        
+        // Check for simple greetings first
+        const greetingResult = this.handleGreetingQuery(message);
+        if (greetingResult) {
+            return greetingResult;
+        }
+        
+        // Check for age calculation queries
+        const ageResult = this.handleAgeCalculationQuery(message);
+        if (ageResult) {
+            return ageResult;
+        }
+        
+        // Check for cooking queries
+        const cookingResult = this.handleCookingQuery(message);
+        if (cookingResult) {
+            return cookingResult;
+        }
+        
+        // Check for date and day queries first (before time queries)
+        const dateResult = this.handleDateQuery(message);
+        if (dateResult) {
+            return dateResult;
+        }
+        
+        // Check for time-related queries
+        const timeResult = this.handleTimeQuery(message);
+        if (timeResult) {
+            return timeResult;
+        }
+        
         // Check for mathematical expressions first
         const mathResult = this.solveMathProblem(message);
         if (mathResult !== null) {
@@ -573,6 +623,18 @@ class Chatbot {
         const translationResult = await this.handleTranslationRequest(message);
         if (translationResult) {
             return translationResult;
+        }
+        
+        // Check for contextual responses based on conversation history FIRST (before user memory)
+        const contextualResult = this.handleContextualResponse(message);
+        if (contextualResult) {
+            return contextualResult;
+        }
+        
+        // Check for user memory/context updates (after contextual responses)
+        const memoryResult = this.handleUserMemory(message);
+        if (memoryResult) {
+            return memoryResult;
         }
         
         // Check for Nahin searches first (highest priority)
@@ -609,12 +671,6 @@ class Chatbot {
             return await this.searchForInformation(message);
         }
         
-        // Check for user memory/context updates (moved after search queries)
-        const memoryResult = this.handleUserMemory(message);
-        if (memoryResult) {
-            return memoryResult;
-        }
-        
         // Check for exact matches for generic responses (longer phrases first)
         console.log('Checking responses for:', lowerMessage);
         console.log('Available response keys:', Object.keys(this.responses));
@@ -626,8 +682,160 @@ class Chatbot {
             }
         }
         
+        // Enhanced fallback with better context understanding
+        const fallbackResponse = this.getIntelligentFallback(message);
+        if (fallbackResponse) {
+            return fallbackResponse;
+        }
+        
         // If no predefined response, search for information online
         return await this.searchForInformation(message);
+    }
+    
+    getIntelligentFallback(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check for simple words that might be casual conversation
+        const simpleWords = ['good', 'bad', 'okay', 'ok', 'fine', 'great', 'awesome', 'cool', 'nice', 'wow', 'yeah', 'yes', 'no', 'maybe', 'sure', 'alright', 'hello', 'hi', 'hey', 'bye', 'thanks', 'thank you'];
+        if (simpleWords.includes(lowerMessage.trim())) {
+            // Give specific responses based on the word
+            if (lowerMessage.trim() === 'bad') {
+                const responses = [
+                    `I'm sorry to hear that! 😔 What's going on?`,
+                    `That's tough! Want to talk about it?`,
+                    `I'm here for you! What happened?`,
+                    `That's no good! How can I help?`,
+                    `I hope things get better! What's on your mind?`,
+                    `That's rough! Want to chat about it?`,
+                    `I'm sorry! What's bothering you?`,
+                    `That's unfortunate! How can I support you?`
+                ];
+                return this.getRandomResponse(responses);
+            } else if (lowerMessage.trim() === 'good') {
+                const responses = [
+                    `That's great! 😊 How are you doing today?`,
+                    `Nice! What's on your mind?`,
+                    `Cool! What would you like to talk about?`,
+                    `Awesome! How can I help you today?`,
+                    `That's good to hear! What's up?`,
+                    `Great! What's new with you?`,
+                    `That's nice! What would you like to know?`,
+                    `Perfect! How can I assist you?`
+                ];
+                return this.getRandomResponse(responses);
+            } else {
+                const responses = [
+                    `That's great! 😊 How are you doing today?`,
+                    `Nice! What's on your mind?`,
+                    `Cool! What would you like to talk about?`,
+                    `Awesome! How can I help you today?`,
+                    `That's good to hear! What's up?`,
+                    `Great! What's new with you?`,
+                    `That's nice! What would you like to know?`,
+                    `Perfect! How can I assist you?`
+                ];
+                return this.getRandomResponse(responses);
+            }
+        }
+        
+        // Check for casual greetings or responses
+        if (lowerMessage.includes('yo') || lowerMessage.includes('sup') || lowerMessage.includes('what\'s up')) {
+            const responses = [
+                `Hey there! 👋 What's up?`,
+                `Yo! How's it going? 😊`,
+                `Sup! What's on your mind today?`,
+                `Hey! What would you like to chat about?`,
+                `Yo! How can I help you? 😄`
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Check for question patterns that indicate the user wants information
+        const questionPatterns = [
+            /what (is|are) (.+)/i,
+            /how (does|do) (.+)/i,
+            /why (is|are) (.+)/i,
+            /when (is|are) (.+)/i,
+            /where (is|are) (.+)/i,
+            /who (is|are) (.+)/i,
+            /which (.+)/i,
+            /can you (.+)/i,
+            /could you (.+)/i,
+            /would you (.+)/i,
+            /tell me about (.+)/i,
+            /explain (.+)/i,
+            /describe (.+)/i,
+            /what does (.+) mean/i,
+            /how to (.+)/i
+        ];
+        
+        for (const pattern of questionPatterns) {
+            const match = message.match(pattern);
+            if (match) {
+                const topic = match[2] || match[1];
+                return `I understand you're asking about "${topic}". While I don't have specific information about this in my current knowledge base, I'd be happy to help you find what you're looking for! 
+
+Could you:
+- Rephrase your question in a different way?
+- Ask about a related topic I might know about?
+- Tell me more about what you're trying to accomplish?
+
+I'm here to help and learn from our conversation! 😊`;
+            }
+        }
+        
+        // Check for statements that might need clarification
+        const statementPatterns = [
+            /i (want|need) (.+)/i,
+            /i (am|was) (.+)/i,
+            /i (have|had) (.+)/i,
+            /i (think|thought) (.+)/i,
+            /i (like|love) (.+)/i,
+            /i (don't|do not) (.+)/i
+        ];
+        
+        for (const pattern of statementPatterns) {
+            const match = message.match(pattern);
+            if (match) {
+                const topic = match[2];
+                return `I see you mentioned "${topic}". That's interesting! 
+
+Could you tell me more about what you'd like to know or how I can help you with this? I'm here to assist and learn from our conversation! 😊`;
+            }
+        }
+        
+        // Check for single words or short phrases that might be topics
+        const words = message.trim().split(/\s+/);
+        if (words.length <= 3 && words.length > 0) {
+            // Skip if it's a question about the bot itself
+            const botQuestions = ['who', 'what', 'how', 'why', 'when', 'where'];
+            const isBotQuestion = botQuestions.some(word => lowerMessage.includes(word));
+            
+            if (!isBotQuestion) {
+                const topic = words.join(' ');
+                return `I see you mentioned "${topic}". 
+
+Could you provide more context about what you'd like to know? For example:
+- Are you asking what this is?
+- Do you want to learn more about it?
+- Are you looking for information related to this?
+
+I'm here to help once I understand better what you're looking for! 😊`;
+            }
+        }
+        
+        // Default conversational response
+        const defaultResponses = [
+            `That's interesting! What would you like to know more about? 😊`,
+            `Cool! How can I help you with that?`,
+            `That's nice! What's on your mind?`,
+            `Interesting! What would you like to chat about?`,
+            `That's great! How can I assist you today?`,
+            `Nice! What would you like to explore?`,
+            `That's awesome! What can I help you with?`,
+            `Cool! What's new with you?`
+        ];
+        return this.getRandomResponse(defaultResponses);
     }
     
     getRandomResponse(responses) {
@@ -637,9 +845,12 @@ class Chatbot {
     handleUserMemory(message) {
         const lowerMessage = message.toLowerCase();
         
+        console.log('handleUserMemory called with:', message);
+        console.log('Current waitingFor:', this.conversationContext.waitingFor);
+        
         // Handle name updates
-        if (lowerMessage.includes('my name is') || lowerMessage.includes('i\'m called') || lowerMessage.includes('call me')) {
-            const nameMatch = message.match(/(?:my name is|i'm called|call me)\s+([a-zA-Z]+)/i);
+        if (lowerMessage.includes('my name is') || lowerMessage.includes('my name') || lowerMessage.includes('i\'m called') || lowerMessage.includes('call me')) {
+            const nameMatch = message.match(/(?:my name is|my name|i'm called|call me)\s+([a-zA-Z]+)/i);
             if (nameMatch) {
                 this.userMemory.name = nameMatch[1];
                 return `Nice to meet you, ${this.userMemory.name}! I'll remember your name.`;
@@ -732,11 +943,92 @@ class Chatbot {
             }
         }
         
-        // Handle direct age responses (just a number)
-        if (/^\d+$/.test(message.trim()) && parseInt(message.trim()) >= 1 && parseInt(message.trim()) <= 120) {
-            this.userMemory.age = parseInt(message.trim());
-            return `Got it! You're ${this.userMemory.age} years old.`;
+        // Handle "I am [age]" pattern
+        if (lowerMessage.includes('i am') || lowerMessage.includes('i\'m')) {
+            const ageMatch = message.match(/(?:i am|i'm)\s+(\d+)(?:\s+years?\s+old)?/i);
+            if (ageMatch) {
+                const age = parseInt(ageMatch[1]);
+                if (age >= 1 && age <= 150) {
+                    this.userMemory.age = age;
+                    
+                    // Special responses for different age ranges
+                    if (age >= 90 && age <= 110) {
+                        return `Wow! You're ${age} years old! 🎉 That's absolutely incredible! You must have so many amazing stories and experiences to share. You're a true inspiration! 🌟`;
+                    } else if (age >= 80 && age < 90) {
+                        return `Amazing! You're ${age} years old! 👴👵 You've lived through so much history and change. Your wisdom and experience are truly valuable! 💫`;
+                    } else if (age >= 70 && age < 80) {
+                        return `Wonderful! You're ${age} years old! 🌟 You've seen so much of life and have so much wisdom to share. Age is just a number, and you're proof of that! ✨`;
+                    } else if (age >= 60 && age < 70) {
+                        return `Great! You're ${age} years old! 🎂 You're in the golden years of life with so much experience and knowledge to offer! 🌟`;
+                    } else if (age >= 50 && age < 60) {
+                        return `Nice! You're ${age} years old! 🎉 You're in the prime of life with so much experience behind you and still so much ahead! ✨`;
+                    } else if (age >= 40 && age < 50) {
+                        return `Cool! You're ${age} years old! 🌟 You're in the sweet spot of life with experience and energy! 💪`;
+                    } else if (age >= 30 && age < 40) {
+                        return `Awesome! You're ${age} years old! 🎯 You're in your prime with the perfect balance of youth and experience! ✨`;
+                    } else if (age >= 20 && age < 30) {
+                        return `Nice! You're ${age} years old! 🚀 You're in the exciting phase of building your life and career! 🌟`;
+                    } else if (age >= 13 && age < 20) {
+                        return `Cool! You're ${age} years old! 🎮 You're in the exciting teenage years, discovering yourself and the world! 🌈`;
+                    } else if (age >= 1 && age < 13) {
+                        return `Aww! You're ${age} years old! 🧸 You're just starting your amazing journey in life! 🌟`;
+                    } else {
+                        return `Got it! You're ${age} years old! 🎂`;
+                    }
+                } else if (age > 150) {
+                    return `Wow! ${age} years old? That's incredible! 🎉 You must be one of the oldest people ever! If this is true, you're absolutely amazing! 🌟✨`;
+                } else if (age < 1) {
+                    return `Haha, ${age} years old? That's quite young! 😄 Are you sure about that?`;
+                }
+            }
         }
+        
+        // Handle birth year calculation
+        if (lowerMessage.includes('born in') || lowerMessage.includes('born on')) {
+            const yearMatch = message.match(/(?:born in|born on)\s+(\d{4})/i);
+            if (yearMatch) {
+                const birthYear = parseInt(yearMatch[1]);
+                const currentYear = new Date().getFullYear();
+                const age = currentYear - birthYear;
+                
+                if (age >= 1 && age <= 150) {
+                    this.userMemory.age = age;
+                    
+                    // Special responses for different age ranges
+                    if (age >= 90 && age <= 110) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎉 That's absolutely incredible! You must have so many amazing stories and experiences to share. You're a true inspiration! 🌟`;
+                    } else if (age >= 80 && age < 90) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 👴👵 You've lived through so much history and change. Your wisdom and experience are truly valuable! 💫`;
+                    } else if (age >= 70 && age < 80) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🌟 You've seen so much of life and have so much wisdom to share. Age is just a number, and you're proof of that! ✨`;
+                    } else if (age >= 60 && age < 70) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎂 You're in the golden years of life with so much experience and knowledge to offer! 🌟`;
+                    } else if (age >= 50 && age < 60) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎉 You're in the prime of life with so much experience behind you and still so much ahead! ✨`;
+                    } else if (age >= 40 && age < 50) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🌟 You're in the sweet spot of life with experience and energy! 💪`;
+                    } else if (age >= 30 && age < 40) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎯 You're in your prime with the perfect balance of youth and experience! ✨`;
+                    } else if (age >= 20 && age < 30) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🚀 You're in the exciting phase of building your life and career! 🌟`;
+                    } else if (age >= 13 && age < 20) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎮 You're in the exciting teenage years, discovering yourself and the world! 🌈`;
+                    } else if (age >= 1 && age < 13) {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🧸 You're just starting your amazing journey in life! 🌟`;
+                    } else {
+                        return `If you were born in ${birthYear}, you would be ${age} years old now! 🎂`;
+                    }
+                } else if (age > 150) {
+                    return `If you were born in ${birthYear}, you would be ${age} years old now! 🎉 That's incredible! You must be one of the oldest people ever! If this is true, you're absolutely amazing! 🌟✨`;
+                } else if (age < 1) {
+                    return `If you were born in ${birthYear}, you would be ${age} years old now! 😄 That's quite young! Are you sure about that birth year?`;
+                } else if (birthYear > currentYear) {
+                    return `Haha, born in ${birthYear}? That's in the future! 😄 Are you a time traveler?`;
+                }
+            }
+        }
+        
+
         
         // Handle location updates
         if (lowerMessage.includes('i live in') || lowerMessage.includes('i\'m from')) {
@@ -823,11 +1115,13 @@ class Chatbot {
         // Check if the message contains any terms from our knowledge base
         for (const [term, info] of Object.entries(this.knowledgeBase)) {
             if (lowerMessage.includes(term)) {
-                let response = info.description + '\n\n';
-                response += 'Key facts:\n';
+                let response = `Cool! Here's what I know about ${term}:\n\n`;
+                response += info.description + '\n\n';
+                response += 'Some interesting facts:\n';
                 info.facts.forEach((fact, index) => {
                     response += `• ${fact}\n`;
                 });
+                response += '\nPretty fascinating, right? 😊';
                 return response;
             }
         }
@@ -835,31 +1129,37 @@ class Chatbot {
         // Check for specific questions about celestial bodies
         if (lowerMessage.includes('sun') || lowerMessage.includes('star')) {
             const sunInfo = this.knowledgeBase.sun;
-            let response = sunInfo.description + '\n\n';
-            response += 'Key facts:\n';
+            let response = `Awesome! Here's what I know about the Sun:\n\n`;
+            response += sunInfo.description + '\n\n';
+            response += 'Some cool facts:\n';
             sunInfo.facts.forEach(fact => {
                 response += `• ${fact}\n`;
             });
+            response += '\nPretty amazing, isn\'t it? 🌟';
             return response;
         }
         
         if (lowerMessage.includes('earth') || lowerMessage.includes('planet')) {
             const earthInfo = this.knowledgeBase.earth;
-            let response = earthInfo.description + '\n\n';
-            response += 'Key facts:\n';
+            let response = `Great question! Here's what I know about Earth:\n\n`;
+            response += earthInfo.description + '\n\n';
+            response += 'Some interesting facts:\n';
             earthInfo.facts.forEach(fact => {
                 response += `• ${fact}\n`;
             });
+            response += '\nOur planet is pretty special! 🌍';
             return response;
         }
         
         if (lowerMessage.includes('moon')) {
             const moonInfo = this.knowledgeBase.moon;
-            let response = moonInfo.description + '\n\n';
-            response += 'Key facts:\n';
+            let response = `Nice! Here's what I know about the Moon:\n\n`;
+            response += moonInfo.description + '\n\n';
+            response += 'Some cool facts:\n';
             moonInfo.facts.forEach(fact => {
                 response += `• ${fact}\n`;
             });
+            response += '\nThe Moon is pretty fascinating! 🌙';
             return response;
         }
         
@@ -1615,6 +1915,9 @@ class Chatbot {
     createGoogleSearchResponse(googleResults, query) {
         let response = '';
         
+        // Start with a conversational introduction
+        response += `Here's what I found about "${query}":\n\n`;
+        
         // Combine information from multiple search results
         googleResults.forEach((result, index) => {
             if (index > 0) response += '\n\n';
@@ -1626,6 +1929,9 @@ class Chatbot {
             response = response.substring(0, 600) + '...';
         }
         
+        // Add a conversational ending
+        response += '\n\nIs there anything specific about this you\'d like to know more about? 😊';
+        
         return response;
     }
     
@@ -1635,6 +1941,9 @@ class Chatbot {
         const webResult = results.find(r => r.source === 'Web');
         
         let response = '';
+        
+        // Start with a conversational introduction
+        response += `Here's what I found about "${query}":\n\n`;
         
         // Start with Wikipedia content (most reliable)
         if (wikiResult) {
@@ -1657,6 +1966,9 @@ class Chatbot {
         if (response.length > 800) {
             response = response.substring(0, 800) + '...';
         }
+        
+        // Add a conversational ending
+        response += '\n\nIs there anything specific about this you\'d like to know more about? 😊';
         
         return response;
     }
@@ -1875,7 +2187,7 @@ class Chatbot {
         
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
-        messageContent.textContent = message;
+        messageContent.innerHTML = message;
         
         const timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
@@ -1952,6 +2264,3181 @@ class Chatbot {
         const displayHours = hours % 12 || 12;
         const displayMinutes = minutes.toString().padStart(2, '0');
         return `${displayHours}:${displayMinutes} ${ampm}`;
+    }
+    
+    handleTimeQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check for various time-related queries
+        const timeKeywords = [
+            'what time is it',
+            'what time',
+            'current time',
+            'time now',
+            'what\'s the time',
+            'whats the time',
+            'tell me the time',
+            'time please',
+            'what time is it now',
+            'current time please',
+            'clock',
+            'hour',
+            'minute'
+        ];
+        
+        // Check if the message contains time-related keywords
+        const hasTimeKeyword = timeKeywords.some(keyword => 
+            lowerMessage.includes(keyword)
+        );
+        
+        if (!hasTimeKeyword) {
+            return null;
+        }
+        
+        // Check for timezone-specific queries
+        const timezoneResult = this.handleTimezoneQuery(message);
+        if (timezoneResult) {
+            return timezoneResult;
+        }
+        
+        // Get current time
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const displayMinutes = minutes.toString().padStart(2, '0');
+        const displaySeconds = seconds.toString().padStart(2, '0');
+        
+        // Get day of week and date
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayOfWeek = days[now.getDay()];
+        const month = months[now.getMonth()];
+        const date = now.getDate();
+        const year = now.getFullYear();
+        
+        // Create response based on the type of time query
+        if (lowerMessage.includes('second')) {
+            return `The current time is ${displayHours}:${displayMinutes}:${displaySeconds} ${ampm}.`;
+        } else {
+            return `The current time is ${displayHours}:${displayMinutes} ${ampm}.`;
+        }
+    }
+    
+    handleTimezoneQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Common timezone mappings
+        const timezoneMap = {
+            'japan': 'Asia/Tokyo',
+            'tokyo': 'Asia/Tokyo',
+            'berlin': 'Europe/Berlin',
+            'germany': 'Europe/Berlin',
+            'london': 'Europe/London',
+            'uk': 'Europe/London',
+            'england': 'Europe/London',
+            'new york': 'America/New_York',
+            'nyc': 'America/New_York',
+            'los angeles': 'America/Los_Angeles',
+            'la': 'America/Los_Angeles',
+            'california': 'America/Los_Angeles',
+            'paris': 'Europe/Paris',
+            'france': 'Europe/Paris',
+            'lyon': 'Europe/Paris',
+            'marseille': 'Europe/Paris',
+            'toulouse': 'Europe/Paris',
+            'nice': 'Europe/Paris',
+            'nantes': 'Europe/Paris',
+            'strasbourg': 'Europe/Paris',
+            'montpellier': 'Europe/Paris',
+            'bordeaux': 'Europe/Paris',
+            'lille': 'Europe/Paris',
+            'rennes': 'Europe/Paris',
+            'reims': 'Europe/Paris',
+            'saint-etienne': 'Europe/Paris',
+            'toulon': 'Europe/Paris',
+            'le havre': 'Europe/Paris',
+            'grenoble': 'Europe/Paris',
+            'dijon': 'Europe/Paris',
+            'angers': 'Europe/Paris',
+            'saint-denis': 'Europe/Paris',
+            'villeurbanne': 'Europe/Paris',
+            'le mans': 'Europe/Paris',
+            'aix-en-provence': 'Europe/Paris',
+            'brest': 'Europe/Paris',
+            'nimes': 'Europe/Paris',
+            'tours': 'Europe/Paris',
+            'limoges': 'Europe/Paris',
+            'clermont-ferrand': 'Europe/Paris',
+            'villeurbanne': 'Europe/Paris',
+            'rome': 'Europe/Rome',
+            'italy': 'Europe/Rome',
+            'milan': 'Europe/Rome',
+            'naples': 'Europe/Rome',
+            'turin': 'Europe/Rome',
+            'palermo': 'Europe/Rome',
+            'genoa': 'Europe/Rome',
+            'bologna': 'Europe/Rome',
+            'florence': 'Europe/Rome',
+            'bari': 'Europe/Rome',
+            'catania': 'Europe/Rome',
+            'venice': 'Europe/Rome',
+            'verona': 'Europe/Rome',
+            'messina': 'Europe/Rome',
+            'padova': 'Europe/Rome',
+            'trieste': 'Europe/Rome',
+            'taranto': 'Europe/Rome',
+            'brescia': 'Europe/Rome',
+            'parma': 'Europe/Rome',
+            'modena': 'Europe/Rome',
+            'reggio calabria': 'Europe/Rome',
+            'reggio emilia': 'Europe/Rome',
+            'perugia': 'Europe/Rome',
+            'livorno': 'Europe/Rome',
+            'ravenna': 'Europe/Rome',
+            'cagliari': 'Europe/Rome',
+            'rimini': 'Europe/Rome',
+            'salerno': 'Europe/Rome',
+            'ferrara': 'Europe/Rome',
+            'sassari': 'Europe/Rome',
+            'syracuse': 'Europe/Rome',
+            'pescara': 'Europe/Rome',
+            'bergamo': 'Europe/Rome',
+            'vicenza': 'Europe/Rome',
+            'trento': 'Europe/Rome',
+            'forli': 'Europe/Rome',
+            'novara': 'Europe/Rome',
+            'piacenza': 'Europe/Rome',
+            'bolzano': 'Europe/Rome',
+            'udine': 'Europe/Rome',
+            'arezzo': 'Europe/Rome',
+            'lecce': 'Europe/Rome',
+            'trento': 'Europe/Rome',
+            'madrid': 'Europe/Madrid',
+            'spain': 'Europe/Madrid',
+            'barcelona': 'Europe/Madrid',
+            'valencia': 'Europe/Madrid',
+            'sevilla': 'Europe/Madrid',
+            'seville': 'Europe/Madrid',
+            'zaragoza': 'Europe/Madrid',
+            'malaga': 'Europe/Madrid',
+            'murcia': 'Europe/Madrid',
+            'palma': 'Europe/Madrid',
+            'las palmas': 'Europe/Madrid',
+            'bilbao': 'Europe/Madrid',
+            'alicante': 'Europe/Madrid',
+            'cordoba': 'Europe/Madrid',
+            'valladolid': 'Europe/Madrid',
+            'vigo': 'Europe/Madrid',
+            'gijon': 'Europe/Madrid',
+            'hospitalet': 'Europe/Madrid',
+            'la coruna': 'Europe/Madrid',
+            'vitoria': 'Europe/Madrid',
+            'granada': 'Europe/Madrid',
+            'elche': 'Europe/Madrid',
+            'tarrasa': 'Europe/Madrid',
+            'badalona': 'Europe/Madrid',
+            'cartagena': 'Europe/Madrid',
+            'jerez': 'Europe/Madrid',
+            'sabadell': 'Europe/Madrid',
+            'mostoles': 'Europe/Madrid',
+            'alcala de henares': 'Europe/Madrid',
+            'pamplona': 'Europe/Madrid',
+            'fuenlabrada': 'Europe/Madrid',
+            'almeria': 'Europe/Madrid',
+            'san sebastian': 'Europe/Madrid',
+            'leganes': 'Europe/Madrid',
+            'santander': 'Europe/Madrid',
+            'castellon': 'Europe/Madrid',
+            'burgos': 'Europe/Madrid',
+            'albacete': 'Europe/Madrid',
+            'alcorcon': 'Europe/Madrid',
+            'getafe': 'Europe/Madrid',
+            'salamanca': 'Europe/Madrid',
+            'huelva': 'Europe/Madrid',
+            'marbella': 'Europe/Madrid',
+            'logrono': 'Europe/Madrid',
+            'tarragona': 'Europe/Madrid',
+            'leon': 'Europe/Madrid',
+            'cadiz': 'Europe/Madrid',
+            'laredo': 'Europe/Madrid',
+            'jaen': 'Europe/Madrid',
+            'orensa': 'Europe/Madrid',
+            'gerona': 'Europe/Madrid',
+            'lugo': 'Europe/Madrid',
+            'caceres': 'Europe/Madrid',
+            'toledo': 'Europe/Madrid',
+            'ceuta': 'Europe/Madrid',
+            'girona': 'Europe/Madrid',
+            'moscow': 'Europe/Moscow',
+            'russia': 'Europe/Moscow',
+            'saint petersburg': 'Europe/Moscow',
+            'novosibirsk': 'Asia/Novosibirsk',
+            'yekaterinburg': 'Asia/Yekaterinburg',
+            'kazan': 'Europe/Moscow',
+            'nizhny novgorod': 'Europe/Moscow',
+            'chelyabinsk': 'Asia/Yekaterinburg',
+            'samara': 'Europe/Samara',
+            'omsk': 'Asia/Omsk',
+            'rostov': 'Europe/Moscow',
+            'ufa': 'Asia/Yekaterinburg',
+            'krasnoyarsk': 'Asia/Krasnoyarsk',
+            'perm': 'Asia/Yekaterinburg',
+            'voronezh': 'Europe/Moscow',
+            'volgograd': 'Europe/Moscow',
+            'krasnodar': 'Europe/Moscow',
+            'saratov': 'Europe/Samara',
+            'tyumen': 'Asia/Yekaterinburg',
+            'tolyatti': 'Europe/Moscow',
+            'izhevsk': 'Asia/Yekaterinburg',
+            'barnaul': 'Asia/Novosibirsk',
+            'ulyanovsk': 'Europe/Moscow',
+            'irkutsk': 'Asia/Irkutsk',
+            'khabarovsk': 'Asia/Vladivostok',
+            'yaroslavl': 'Europe/Moscow',
+            'vladivostok': 'Asia/Vladivostok',
+            'makhachkala': 'Europe/Moscow',
+            'tomsk': 'Asia/Novosibirsk',
+            'orenburg': 'Asia/Yekaterinburg',
+            'kemerovo': 'Asia/Novosibirsk',
+            'novokuznetsk': 'Asia/Novosibirsk',
+            'ryazan': 'Europe/Moscow',
+            'astrahan': 'Europe/Moscow',
+            'naberezhnye chelny': 'Europe/Moscow',
+            'penza': 'Europe/Moscow',
+            'lipetsk': 'Europe/Moscow',
+            'kirov': 'Europe/Moscow',
+            'cheboksary': 'Europe/Moscow',
+            'tula': 'Europe/Moscow',
+            'kaliningrad': 'Europe/Kaliningrad',
+            'balashikha': 'Europe/Moscow',
+            'krasnogorsk': 'Europe/Moscow',
+            'podolsk': 'Europe/Moscow',
+            'khimki': 'Europe/Moscow',
+            'elektrostal': 'Europe/Moscow',
+            'odintsovo': 'Europe/Moscow',
+            'korolyov': 'Europe/Moscow',
+            'lyubertsy': 'Europe/Moscow',
+            'domodedovo': 'Europe/Moscow',
+            'reutov': 'Europe/Moscow',
+            'zelenograd': 'Europe/Moscow',
+            'ramenskoye': 'Europe/Moscow',
+            'pushkino': 'Europe/Moscow',
+            'dolgoprudny': 'Europe/Moscow',
+            'klimovsk': 'Europe/Moscow',
+            'vidnoye': 'Europe/Moscow',
+            'troitsk': 'Europe/Moscow',
+            'lobnya': 'Europe/Moscow',
+            'dzerzhinsky': 'Europe/Moscow',
+            'krasnoznamensk': 'Europe/Moscow',
+            'kotelniki': 'Europe/Moscow',
+            'lytkarino': 'Europe/Moscow',
+            'butovo': 'Europe/Moscow',
+            'shcherbinka': 'Europe/Moscow',
+            'podolsk': 'Europe/Moscow',
+            'khimki': 'Europe/Moscow',
+            'elektrostal': 'Europe/Moscow',
+            'odintsovo': 'Europe/Moscow',
+            'korolyov': 'Europe/Moscow',
+            'lyubertsy': 'Europe/Moscow',
+            'domodedovo': 'Europe/Moscow',
+            'reutov': 'Europe/Moscow',
+            'zelenograd': 'Europe/Moscow',
+            'ramenskoye': 'Europe/Moscow',
+            'pushkino': 'Europe/Moscow',
+            'dolgoprudny': 'Europe/Moscow',
+            'klimovsk': 'Europe/Moscow',
+            'vidnoye': 'Europe/Moscow',
+            'troitsk': 'Europe/Moscow',
+            'lobnya': 'Europe/Moscow',
+            'dzerzhinsky': 'Europe/Moscow',
+            'krasnoznamensk': 'Europe/Moscow',
+            'kotelniki': 'Europe/Moscow',
+            'lytkarino': 'Europe/Moscow',
+            'butovo': 'Europe/Moscow',
+            'shcherbinka': 'Europe/Moscow',
+            'beijing': 'Asia/Shanghai',
+            'china': 'Asia/Shanghai',
+            'seoul': 'Asia/Seoul',
+            'korea': 'Asia/Seoul',
+            'sydney': 'Australia/Sydney',
+            'australia': 'Australia/Sydney',
+            'mumbai': 'Asia/Kolkata',
+            'india': 'Asia/Kolkata',
+            'delhi': 'Asia/Kolkata',
+            'dubai': 'Asia/Dubai',
+            'uae': 'Asia/Dubai',
+            'singapore': 'Asia/Singapore',
+            'bangkok': 'Asia/Bangkok',
+            'thailand': 'Asia/Bangkok',
+            'jakarta': 'Asia/Jakarta',
+            'indonesia': 'Asia/Jakarta',
+            'manila': 'Asia/Manila',
+            'philippines': 'Asia/Manila',
+            'hanoi': 'Asia/Ho_Chi_Minh',
+            'vietnam': 'Asia/Ho_Chi_Minh',
+            'kuala lumpur': 'Asia/Kuala_Lumpur',
+            'malaysia': 'Asia/Kuala_Lumpur',
+            'melaka': 'Asia/Kuala_Lumpur',
+            'malacca': 'Asia/Kuala_Lumpur',
+            'cyberjaya': 'Asia/Kuala_Lumpur',
+            'putrajaya': 'Asia/Kuala_Lumpur',
+            'shah alam': 'Asia/Kuala_Lumpur',
+            'petaling jaya': 'Asia/Kuala_Lumpur',
+            'subang jaya': 'Asia/Kuala_Lumpur',
+            'klang': 'Asia/Kuala_Lumpur',
+            'george town': 'Asia/Kuala_Lumpur',
+            'penang': 'Asia/Kuala_Lumpur',
+            'ipoh': 'Asia/Kuala_Lumpur',
+            'johor bahru': 'Asia/Kuala_Lumpur',
+            'johor': 'Asia/Kuala_Lumpur',
+            'alor setar': 'Asia/Kuala_Lumpur',
+            'kota kinabalu': 'Asia/Kuala_Lumpur',
+            'kuching': 'Asia/Kuala_Lumpur',
+            'miri': 'Asia/Kuala_Lumpur',
+            'sibu': 'Asia/Kuala_Lumpur',
+            'sandakan': 'Asia/Kuala_Lumpur',
+            'taiping': 'Asia/Kuala_Lumpur',
+            'seremban': 'Asia/Kuala_Lumpur',
+            'nilai': 'Asia/Kuala_Lumpur',
+            'port dickson': 'Asia/Kuala_Lumpur',
+            'malacca city': 'Asia/Kuala_Lumpur',
+            'dhaka': 'Asia/Dhaka',
+            'bangladesh': 'Asia/Dhaka',
+            'tangail': 'Asia/Dhaka',
+            'tangail city': 'Asia/Dhaka',
+            'chittagong': 'Asia/Dhaka',
+            'sylhet': 'Asia/Dhaka',
+            'rajshahi': 'Asia/Dhaka',
+            'khulna': 'Asia/Dhaka',
+            'barisal': 'Asia/Dhaka',
+            'rangpur': 'Asia/Dhaka',
+            'mymensingh': 'Asia/Dhaka',
+            'comilla': 'Asia/Dhaka',
+            'jessore': 'Asia/Dhaka',
+            'bogra': 'Asia/Dhaka',
+            'dinajpur': 'Asia/Dhaka',
+            'pabna': 'Asia/Dhaka',
+            'kustia': 'Asia/Dhaka',
+            'faridpur': 'Asia/Dhaka',
+            'gopalganj': 'Asia/Dhaka',
+            'madaripur': 'Asia/Dhaka',
+            'shariatpur': 'Asia/Dhaka',
+            'rajbari': 'Asia/Dhaka',
+            'magura': 'Asia/Dhaka',
+            'jhenaidah': 'Asia/Dhaka',
+            'narail': 'Asia/Dhaka',
+            'satkhira': 'Asia/Dhaka',
+            'bagerhat': 'Asia/Dhaka',
+            'pirojpur': 'Asia/Dhaka',
+            'barguna': 'Asia/Dhaka',
+            'patuakhali': 'Asia/Dhaka',
+            'bhola': 'Asia/Dhaka',
+            'lakshmipur': 'Asia/Dhaka',
+            'noakhali': 'Asia/Dhaka',
+            'feni': 'Asia/Dhaka',
+            'chandpur': 'Asia/Dhaka',
+            'lakshmipur': 'Asia/Dhaka',
+            'cox\'s bazar': 'Asia/Dhaka',
+            'coxs bazar': 'Asia/Dhaka',
+            'bandarban': 'Asia/Dhaka',
+            'rangamati': 'Asia/Dhaka',
+            'khagrachari': 'Asia/Dhaka',
+            'kolkata': 'Asia/Kolkata',
+            'calcutta': 'Asia/Kolkata',
+            'chennai': 'Asia/Kolkata',
+            'madras': 'Asia/Kolkata',
+            'hyderabad': 'Asia/Kolkata',
+            'bangalore': 'Asia/Kolkata',
+            'bengaluru': 'Asia/Kolkata',
+            'pune': 'Asia/Kolkata',
+            'ahmedabad': 'Asia/Kolkata',
+            'surat': 'Asia/Kolkata',
+            'jaipur': 'Asia/Kolkata',
+            'lucknow': 'Asia/Kolkata',
+            'kanpur': 'Asia/Kolkata',
+            'nagpur': 'Asia/Kolkata',
+            'indore': 'Asia/Kolkata',
+            'thane': 'Asia/Kolkata',
+            'bhopal': 'Asia/Kolkata',
+            'visakhapatnam': 'Asia/Kolkata',
+            'patna': 'Asia/Kolkata',
+            'vadodara': 'Asia/Kolkata',
+            'ghaziabad': 'Asia/Kolkata',
+            'ludhiana': 'Asia/Kolkata',
+            'agra': 'Asia/Kolkata',
+            'nashik': 'Asia/Kolkata',
+            'ranchi': 'Asia/Kolkata',
+            'howrah': 'Asia/Kolkata',
+            'coimbatore': 'Asia/Kolkata',
+            'raipur': 'Asia/Kolkata',
+            'jabalpur': 'Asia/Kolkata',
+            'gwalior': 'Asia/Kolkata',
+            'vijayawada': 'Asia/Kolkata',
+            'jodhpur': 'Asia/Kolkata',
+            'madurai': 'Asia/Kolkata',
+            'guwahati': 'Asia/Kolkata',
+            'chandigarh': 'Asia/Kolkata',
+            'amritsar': 'Asia/Kolkata',
+            'allahabad': 'Asia/Kolkata',
+            'rohtak': 'Asia/Kolkata',
+            'ranchi': 'Asia/Kolkata',
+            'mysore': 'Asia/Kolkata',
+            'aurangabad': 'Asia/Kolkata',
+            'solapur': 'Asia/Kolkata',
+            'bhubaneswar': 'Asia/Kolkata',
+            'jamshedpur': 'Asia/Kolkata',
+            'bhubaneshwar': 'Asia/Kolkata',
+            'varanasi': 'Asia/Kolkata',
+            'srinagar': 'Asia/Kolkata',
+            'salem': 'Asia/Kolkata',
+            'warangal': 'Asia/Kolkata',
+            'dhanbad': 'Asia/Kolkata',
+            'guntur': 'Asia/Kolkata',
+            'amravati': 'Asia/Kolkata',
+            'noida': 'Asia/Kolkata',
+            'bhiwandi': 'Asia/Kolkata',
+            'bhavnagar': 'Asia/Kolkata',
+            'tiruchirappalli': 'Asia/Kolkata',
+            'kota': 'Asia/Kolkata',
+            'ajmer': 'Asia/Kolkata',
+            'bhubaneswar': 'Asia/Kolkata',
+            'nairobi': 'Africa/Nairobi',
+            'kenya': 'Africa/Nairobi',
+            'lagos': 'Africa/Lagos',
+            'nigeria': 'Africa/Lagos',
+            'cairo': 'Africa/Cairo',
+            'egypt': 'Africa/Cairo',
+            'johannesburg': 'Africa/Johannesburg',
+            'south africa': 'Africa/Johannesburg',
+            'mexico city': 'America/Mexico_City',
+            'mexico': 'America/Mexico_City',
+            'sao paulo': 'America/Sao_Paulo',
+            'brazil': 'America/Sao_Paulo',
+            'buenos aires': 'America/Argentina/Buenos_Aires',
+            'argentina': 'America/Argentina/Buenos_Aires',
+            'toronto': 'America/Toronto',
+            'canada': 'America/Toronto',
+            'vancouver': 'America/Vancouver',
+            'montreal': 'America/Montreal',
+            'calgary': 'America/Edmonton',
+            'edmonton': 'America/Edmonton',
+            'ottawa': 'America/Toronto',
+            'winnipeg': 'America/Winnipeg',
+            'halifax': 'America/Halifax',
+            'st johns': 'America/St_Johns',
+            'newfoundland': 'America/St_Johns',
+            'victoria': 'America/Vancouver',
+            'saskatoon': 'America/Regina',
+            'regina': 'America/Regina',
+            'quebec': 'America/Toronto',
+            'quebec city': 'America/Toronto',
+            'hamilton': 'America/Toronto',
+            'kitchener': 'America/Toronto',
+            'waterloo': 'America/Toronto',
+            'london ontario': 'America/Toronto',
+            'windsor': 'America/Toronto',
+            'kingston': 'America/Toronto',
+            'sudbury': 'America/Toronto',
+            'thunder bay': 'America/Toronto',
+            'saint john': 'America/Halifax',
+            'fredericton': 'America/Halifax',
+            'charlottetown': 'America/Halifax',
+            'whitehorse': 'America/Whitehorse',
+            'yellowknife': 'America/Yellowknife',
+            'iqaluit': 'America/Iqaluit',
+            'nunavut': 'America/Iqaluit',
+            'yukon': 'America/Whitehorse',
+            'northwest territories': 'America/Yellowknife',
+            'chicago': 'America/Chicago',
+            'houston': 'America/Chicago',
+            'dallas': 'America/Chicago',
+            'fort worth': 'America/Chicago',
+            'austin': 'America/Chicago',
+            'san antonio': 'America/Chicago',
+            'el paso': 'America/Denver',
+            'arlington': 'America/Chicago',
+            'corpus christi': 'America/Chicago',
+            'plano': 'America/Chicago',
+            'laredo': 'America/Chicago',
+            'lubbock': 'America/Chicago',
+            'garland': 'America/Chicago',
+            'irving': 'America/Chicago',
+            'amarillo': 'America/Chicago',
+            'grand prairie': 'America/Chicago',
+            'brownsville': 'America/Chicago',
+            'pasadena': 'America/Chicago',
+            'mckinney': 'America/Chicago',
+            'mesa': 'America/Phoenix',
+            'tucson': 'America/Phoenix',
+            'chandler': 'America/Phoenix',
+            'scottsdale': 'America/Phoenix',
+            'glendale': 'America/Phoenix',
+            'gilbert': 'America/Phoenix',
+            'tempe': 'America/Phoenix',
+            'peoria': 'America/Phoenix',
+            'surprise': 'America/Phoenix',
+            'yuma': 'America/Phoenix',
+            'avondale': 'America/Phoenix',
+            'goodyear': 'America/Phoenix',
+            'flagstaff': 'America/Phoenix',
+            'buckeye': 'America/Phoenix',
+            'casa grande': 'America/Phoenix',
+            'lake havasu city': 'America/Phoenix',
+            'maricopa': 'America/Phoenix',
+            'oregon': 'America/Los_Angeles',
+            'portland': 'America/Los_Angeles',
+            'salem': 'America/Los_Angeles',
+            'eugene': 'America/Los_Angeles',
+            'gresham': 'America/Los_Angeles',
+            'hillsboro': 'America/Los_Angeles',
+            'beaverton': 'America/Los_Angeles',
+            'bend': 'America/Los_Angeles',
+            'medford': 'America/Los_Angeles',
+            'springfield': 'America/Los_Angeles',
+            'corvallis': 'America/Los_Angeles',
+            'albany': 'America/Los_Angeles',
+            'tigard': 'America/Los_Angeles',
+            'lake oswego': 'America/Los_Angeles',
+            'keizer': 'America/Los_Angeles',
+            'grant\'s pass': 'America/Los_Angeles',
+            'oregon city': 'America/Los_Angeles',
+            'miami': 'America/New_York',
+            'florida': 'America/New_York',
+            'orlando': 'America/New_York',
+            'tampa': 'America/New_York',
+            'jacksonville': 'America/New_York',
+            'fort lauderdale': 'America/New_York',
+            'tallahassee': 'America/New_York',
+            'gainesville': 'America/New_York',
+            'daytona beach': 'America/New_York',
+            'clearwater': 'America/New_York',
+            'coral springs': 'America/New_York',
+            'cape coral': 'America/New_York',
+            'port st lucie': 'America/New_York',
+            'sarasota': 'America/New_York',
+            'palm bay': 'America/New_York',
+            'pompano beach': 'America/New_York',
+            'hollywood': 'America/New_York',
+            'gainesville': 'America/New_York',
+            'lakeland': 'America/New_York',
+            'bradenton': 'America/New_York',
+            'fort myers': 'America/New_York',
+            'kissimmee': 'America/New_York',
+            'boynton beach': 'America/New_York',
+            'delray beach': 'America/New_York',
+            'boca raton': 'America/New_York',
+            'west palm beach': 'America/New_York',
+            'palm beach': 'America/New_York',
+            'naples': 'America/New_York',
+            'melbourne': 'America/New_York',
+            'daytona': 'America/New_York',
+            'kissimmee': 'America/New_York',
+            'seattle': 'America/Los_Angeles',
+            'washington': 'America/Los_Angeles',
+            'spokane': 'America/Los_Angeles',
+            'tacoma': 'America/Los_Angeles',
+            'vancouver wa': 'America/Los_Angeles',
+            'bellevue': 'America/Los_Angeles',
+            'kent': 'America/Los_Angeles',
+            'everett': 'America/Los_Angeles',
+            'renton': 'America/Los_Angeles',
+            'yakima': 'America/Los_Angeles',
+            'spokane valley': 'America/Los_Angeles',
+            'federal way': 'America/Los_Angeles',
+            'bellingham': 'America/Los_Angeles',
+            'kennewick': 'America/Los_Angeles',
+            'auburn': 'America/Los_Angeles',
+            'pasco': 'America/Los_Angeles',
+            'marysville': 'America/Los_Angeles',
+            'lakewood': 'America/Los_Angeles',
+            'redmond': 'America/Los_Angeles',
+            'shoreline': 'America/Los_Angeles',
+            'richland': 'America/Los_Angeles',
+            'olympia': 'America/Los_Angeles',
+            'lynnwood': 'America/Los_Angeles',
+            'bremerton': 'America/Los_Angeles',
+            'kennewick': 'America/Los_Angeles',
+            'puyallup': 'America/Los_Angeles',
+            'denver': 'America/Denver',
+            'colorado': 'America/Denver',
+            'colorado springs': 'America/Denver',
+            'aurora': 'America/Denver',
+            'fort collins': 'America/Denver',
+            'lakewood': 'America/Denver',
+            'thornton': 'America/Denver',
+            'arvada': 'America/Denver',
+            'westminster': 'America/Denver',
+            'pueblo': 'America/Denver',
+            'boulder': 'America/Denver',
+            'greeley': 'America/Denver',
+            'longmont': 'America/Denver',
+            'grand junction': 'America/Denver',
+            'loveland': 'America/Denver',
+            'broomfield': 'America/Denver',
+            'castle rock': 'America/Denver',
+            'commerce city': 'America/Denver',
+            'parker': 'America/Denver',
+            'littleton': 'America/Denver',
+            'northglenn': 'America/Denver',
+            'westminster': 'America/Denver',
+            'wheat ridge': 'America/Denver',
+            'englewood': 'America/Denver',
+            'centennial': 'America/Denver',
+            'highlands ranch': 'America/Denver',
+            'phoenix': 'America/Phoenix',
+            'arizona': 'America/Phoenix',
+            'anchorage': 'America/Anchorage',
+            'alaska': 'America/Anchorage',
+            'fairbanks': 'America/Anchorage',
+            'juneau': 'America/Anchorage',
+            'sitka': 'America/Anchorage',
+            'ketchikan': 'America/Anchorage',
+            'kenai': 'America/Anchorage',
+            'kodiak': 'America/Anchorage',
+            'bethel': 'America/Anchorage',
+            'kodiak': 'America/Anchorage',
+            'palmer': 'America/Anchorage',
+            'wasilla': 'America/Anchorage',
+            'kenai': 'America/Anchorage',
+            'kodiak': 'America/Anchorage',
+            'honolulu': 'Pacific/Honolulu',
+            'hawaii': 'Pacific/Honolulu',
+            'hilo': 'Pacific/Honolulu',
+            'kailua': 'Pacific/Honolulu',
+            'kapolei': 'Pacific/Honolulu',
+            'ewa beach': 'Pacific/Honolulu',
+            'mililani town': 'Pacific/Honolulu',
+            'kihei': 'Pacific/Honolulu',
+            'maui': 'Pacific/Honolulu',
+            'kailua kona': 'Pacific/Honolulu',
+            'kaneohe': 'Pacific/Honolulu',
+            'ewa': 'Pacific/Honolulu',
+            'mililani': 'Pacific/Honolulu',
+            'kahului': 'Pacific/Honolulu',
+            'kihei': 'Pacific/Honolulu',
+            'lahaina': 'Pacific/Honolulu',
+            'waipahu': 'Pacific/Honolulu',
+            'pearl city': 'Pacific/Honolulu',
+            'waimalu': 'Pacific/Honolulu',
+            'nanakuli': 'Pacific/Honolulu',
+            'kailua': 'Pacific/Honolulu',
+            'wahiawa': 'Pacific/Honolulu',
+            'schofield barracks': 'Pacific/Honolulu',
+            'wailuku': 'Pacific/Honolulu',
+            'waianae': 'Pacific/Honolulu',
+            'kaneohe': 'Pacific/Honolulu',
+            'makakilo city': 'Pacific/Honolulu',
+            'ewa': 'Pacific/Honolulu',
+            'mililani': 'Pacific/Honolulu',
+            'kahului': 'Pacific/Honolulu',
+            'kihei': 'Pacific/Honolulu',
+            'lahaina': 'Pacific/Honolulu',
+            'waipahu': 'Pacific/Honolulu',
+            'pearl city': 'Pacific/Honolulu',
+            'waimalu': 'Pacific/Honolulu',
+            'nanakuli': 'Pacific/Honolulu',
+            'kailua': 'Pacific/Honolulu',
+            'wahiawa': 'Pacific/Honolulu',
+            'schofield barracks': 'Pacific/Honolulu',
+            'wailuku': 'Pacific/Honolulu',
+            'waianae': 'Pacific/Honolulu',
+            'kaneohe': 'Pacific/Honolulu',
+            'makakilo city': 'Pacific/Honolulu'
+        };
+        
+        // Check if the message contains a timezone
+        for (const [location, timezone] of Object.entries(timezoneMap)) {
+            if (lowerMessage.includes(location)) {
+                try {
+                    const now = new Date();
+                    const timeInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+                    
+                    const hours = timeInTimezone.getHours();
+                    const minutes = timeInTimezone.getMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const displayHours = hours % 12 || 12;
+                    const displayMinutes = minutes.toString().padStart(2, '0');
+                    
+                    // Get timezone offset for display
+                    const localTime = new Date();
+                    const timezoneTime = new Date(localTime.toLocaleString('en-US', { timeZone: timezone }));
+                    const offsetHours = Math.round((timezoneTime.getTime() - localTime.getTime()) / (1000 * 60 * 60));
+                    
+                    let offsetText = '';
+                    if (offsetHours > 0) {
+                        offsetText = ` (${offsetHours} hours ahead)`;
+                    } else if (offsetHours < 0) {
+                        offsetText = ` (${Math.abs(offsetHours)} hours behind)`;
+                    } else {
+                        offsetText = ' (same time)';
+                    }
+                    
+                    return `The current time in ${location.charAt(0).toUpperCase() + location.slice(1)} is ${displayHours}:${displayMinutes} ${ampm}${offsetText}.`;
+                } catch (error) {
+                    return `I'm sorry, I couldn't get the time for ${location}. Please try a different location.`;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    handleDateQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check for timezone-specific date queries first
+        const timezoneDateResult = this.handleTimezoneDateQuery(message);
+        if (timezoneDateResult) {
+            return timezoneDateResult;
+        }
+        
+        // Check for various date and day queries
+        const dateKeywords = [
+            'what day is today',
+            'what day is it today',
+            'what day is it',
+            'what day today',
+            'today is what day',
+            'what day of the week',
+            'what day of week',
+            'day of the week',
+            'day of week',
+            'what date is today',
+            'what date today',
+            'today\'s date',
+            'todays date',
+            'what is today\'s date',
+            'what is todays date',
+            'current date',
+            'today\'s day',
+            'todays day',
+            'what is the date',
+            'what\'s the date',
+            'whats the date',
+            'date today',
+            'today date',
+            'current day',
+            'what day',
+            'what date',
+            'day today',
+            'date',
+            'day'
+        ];
+        
+        // Check for combined day and time queries
+        const combinedKeywords = [
+            'day and time',
+            'time and day',
+            'date and time',
+            'time and date',
+            'day time',
+            'time day',
+            'date time',
+            'time date'
+        ];
+        
+        const hasCombinedKeyword = combinedKeywords.some(keyword => 
+            lowerMessage.includes(keyword)
+        );
+        
+        if (hasCombinedKeyword) {
+            return this.handleCombinedDateTimeQuery(message);
+        }
+        
+        // Check if the message contains date-related keywords
+        const hasDateKeyword = dateKeywords.some(keyword => 
+            lowerMessage.includes(keyword)
+        );
+        
+        if (!hasDateKeyword) {
+            return null;
+        }
+        
+        // Get current date information
+        const now = new Date();
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayOfWeek = days[now.getDay()];
+        const month = months[now.getMonth()];
+        const date = now.getDate();
+        const year = now.getFullYear();
+        
+        // Add ordinal suffix to date
+        const getOrdinalSuffix = (day) => {
+            if (day >= 11 && day <= 13) return 'th';
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        };
+        
+        const ordinalDate = date + getOrdinalSuffix(date);
+        
+        // Create response based on the type of date query
+        if (lowerMessage.includes('day') && !lowerMessage.includes('date')) {
+            // User is asking about the day of the week
+            return `Today is ${dayOfWeek}.`;
+        } else if (lowerMessage.includes('date') && !lowerMessage.includes('day')) {
+            // User is asking about the full date
+            return `Today's date is ${dayOfWeek}, ${month} ${ordinalDate}, ${year}.`;
+        } else {
+            // User is asking about both day and date, or general date query
+            return `Today is ${dayOfWeek}, ${month} ${ordinalDate}, ${year}.`;
+        }
+    }
+    
+    handleContextualQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Intelligent context understanding patterns
+        const contextPatterns = [
+            // Questions about capabilities
+            {
+                patterns: ['what can you do', 'what are you capable of', 'what do you do', 'help', 'capabilities', 'features'],
+                response: `I'm Ven, your AI assistant! I can help you with:
+
+🤖 **Conversation & Chat**
+- Friendly greetings and casual conversation
+- Answer questions and provide information
+- Translate text between 70+ languages
+- Solve math problems and calculations
+
+⏰ **Time & Date**
+- Tell you the current time and date
+- Timezone-specific time queries
+- Age calculations from birth year
+
+🍳 **Cooking & Recipes**
+- Step-by-step cooking instructions
+- Recipes from Italian, Spanish, Mexican, Malaysian, and Bangladeshi cuisines
+- Basic cooking techniques
+
+🧮 **Calculations**
+- Mathematical expressions
+- Age calculations
+- Simple computations
+
+💬 **General Knowledge**
+- Answer questions about various topics
+- Provide helpful information
+- Engage in friendly conversation
+
+Just ask me anything! I'm here to help make your day easier and more enjoyable! 😊`
+            },
+            
+            // Self-awareness questions
+            {
+                patterns: ['who are you', 'what are you', 'tell me about yourself', 'your name', 'what is your name'],
+                response: `I'm Ven, your friendly AI assistant! 🤖
+
+I'm designed to be helpful, conversational, and knowledgeable. I can assist with various tasks like answering questions, providing recipes, helping with calculations, translating languages, and just being a good chat companion.
+
+I aim to be:
+- **Helpful** - Providing useful information and assistance
+- **Friendly** - Engaging in warm, conversational interactions
+- **Knowledgeable** - Sharing information across many topics
+- **Reliable** - Giving accurate and helpful responses
+
+I'm here to make your interactions more enjoyable and productive! What would you like to know or do? 😊`
+            },
+            
+            // Creator questions
+            {
+                patterns: ['who made you', 'who created you', 'who built you', 'who developed you', 'who programmed you', 'who designed you', 'who is your creator', 'who is your developer', 'who is your programmer'],
+                response: `I was created by <strong>Nahin Bin Monir</strong>, a developer and programmer! 🤖
+
+Nahin is a developer who loves creating useful applications and AI assistants like me. He designed me to be helpful, friendly, and knowledgeable across many topics.
+
+You can learn more about Nahin and his work at his website: <strong><a href="https://nahin.space/" target="_blank">https://nahin.space/</a></strong>
+
+I'm here to assist you with various tasks like answering questions, providing recipes, helping with calculations, translating languages, and just being a good conversation partner. What would you like to know or how can I help you today? 😊`
+            },
+            
+            // Clarification requests
+            {
+                patterns: ['i don\'t understand', 'what do you mean', 'can you explain', 'i\'m confused', 'clarify', 'what does that mean'],
+                response: `I'd be happy to clarify! 😊
+
+Could you please rephrase your question or let me know what specific part you'd like me to explain further? I want to make sure I give you the most helpful and accurate response possible.
+
+Feel free to ask in a different way or break down your question into smaller parts - I'm here to help! 🤝`
+            },
+            
+            // Thank you responses
+            {
+                patterns: ['thank you', 'thanks', 'thank you so much', 'thanks a lot', 'appreciate it', 'grateful'],
+                response: `You're very welcome! 😊 It's my pleasure to help you. 
+
+Is there anything else you'd like to know or any other way I can assist you today? I'm here whenever you need me! 🤝`
+            },
+            
+            // Goodbye responses
+            {
+                patterns: ['goodbye', 'bye', 'see you', 'talk to you later', 'have a good day', 'take care'],
+                response: `Goodbye! 👋 It was great chatting with you today. 
+
+Feel free to come back anytime - I'm always here to help and chat! Have a wonderful day ahead! 😊`
+            },
+            
+            // Confusion about responses
+            {
+                patterns: ['that\'s not what i asked', 'that\'s not right', 'you didn\'t answer', 'wrong answer', 'not helpful'],
+                response: `I apologize for not understanding your question correctly. 😔
+
+Could you please rephrase your question or provide more context? I want to give you the most accurate and helpful response possible. Sometimes I need a bit more information to understand exactly what you're looking for.
+
+What specifically would you like to know? I'm here to help! 🤝`
+            }
+        ];
+        
+        // Check each pattern with more flexible matching
+        for (const pattern of contextPatterns) {
+            const hasPattern = pattern.patterns.some(p => {
+                // Check for exact phrase match
+                if (lowerMessage.includes(p)) return true;
+                
+                // Check for word variations (e.g., "made" vs "created")
+                const words = p.split(' ');
+                if (words.length > 1) {
+                    // For multi-word patterns, check if all words are present
+                    return words.every(word => lowerMessage.includes(word));
+                }
+                
+                return false;
+            });
+            
+            if (hasPattern && pattern.response) {
+                return pattern.response;
+            }
+        }
+        
+        // Enhanced keyword-based understanding
+        const enhancedKeywords = {
+            // Technology
+            'computer': 'Computers are electronic devices that process data and perform calculations. They can be used for work, entertainment, communication, and much more. What specific aspect of computers would you like to know about?',
+            'internet': 'The internet is a global network of connected computers that allows people to share information, communicate, and access services worldwide. It\'s revolutionized how we work, learn, and connect with others.',
+            'smartphone': 'Smartphones are mobile phones with advanced computing capabilities. They can make calls, send messages, browse the internet, take photos, run apps, and much more.',
+            
+            // Science
+            'gravity': 'Gravity is a fundamental force that attracts objects toward each other. On Earth, it pulls everything toward the center of the planet, which is why things fall down and why we stay on the ground.',
+            'photosynthesis': 'Photosynthesis is the process by which plants convert sunlight, water, and carbon dioxide into oxygen and glucose (sugar). This is how plants make their own food and produce oxygen for other living things.',
+            'evolution': 'Evolution is the process by which living things change over time through natural selection. Organisms with traits that help them survive and reproduce pass those traits to their offspring.',
+            
+            // Health
+            'exercise': 'Exercise is physical activity that improves health and fitness. It strengthens muscles, improves cardiovascular health, boosts mood, and helps maintain a healthy weight.',
+            'nutrition': 'Nutrition is the science of how food affects health. A balanced diet provides the nutrients your body needs to function properly and stay healthy.',
+            'sleep': 'Sleep is essential for health and well-being. It allows your body to rest, repair, and process information. Most adults need 7-9 hours of sleep per night.',
+            
+            // Education
+            'learning': 'Learning is the process of acquiring knowledge, skills, or understanding. It can happen through study, experience, observation, or instruction.',
+            'education': 'Education is the process of teaching and learning. It helps people develop knowledge, skills, and understanding that prepare them for life and work.',
+            'study': 'Studying is the act of learning or reviewing information. Effective study techniques include reading, taking notes, practicing, and testing yourself.',
+            
+            // Business
+            'business': 'A business is an organization that provides goods or services to customers. Businesses can be small (like a local shop) or large (like multinational corporations).',
+            'entrepreneur': 'An entrepreneur is someone who starts and runs their own business. They take risks to create new products, services, or ways of doing things.',
+            'marketing': 'Marketing is the process of promoting and selling products or services. It involves understanding customer needs and communicating value effectively.',
+            
+            // Environment
+            'climate change': 'Climate change refers to long-term changes in global weather patterns and temperatures. Human activities, particularly burning fossil fuels, are contributing to these changes.',
+            'recycling': 'Recycling is the process of converting waste materials into new products. It helps conserve resources, reduce pollution, and protect the environment.',
+            'sustainability': 'Sustainability means meeting current needs without compromising the ability of future generations to meet their own needs. It involves environmental, social, and economic considerations.'
+        };
+        
+        // Check for enhanced keywords
+        for (const [keyword, response] of Object.entries(enhancedKeywords)) {
+            if (lowerMessage.includes(keyword)) {
+                return response;
+            }
+        }
+        
+        return null;
+    }
+    
+    handleContextualResponse(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        console.log('Current waitingFor:', this.conversationContext.waitingFor);
+        
+        // Check if we're waiting for a specific response
+        if (this.conversationContext.waitingFor && this.conversationContext.waitingFor !== null) {
+            console.log('Waiting for:', this.conversationContext.waitingFor);
+            return this.handleWaitingResponse(message);
+        }
+        
+        // Check for age guessing game
+        if (lowerMessage.includes('guess my age') || lowerMessage.includes('what\'s my age')) {
+            this.conversationContext.waitingFor = 'age';
+            this.conversationContext.currentTopic = 'age_guessing';
+            return "You tell me! What's your age? 😊";
+        }
+        
+        // Check for name guessing game
+        if (lowerMessage.includes('guess my name') || lowerMessage.includes('what\'s my name') || lowerMessage.includes('who am i')) {
+            this.conversationContext.waitingFor = 'name';
+            this.conversationContext.currentTopic = 'name_guessing';
+            return "You tell me! What's your name? 😊";
+        }
+        
+        // Check for other guessing games
+        if (lowerMessage.includes('guess') && (lowerMessage.includes('my') || lowerMessage.includes('what'))) {
+            this.conversationContext.waitingFor = 'general';
+            this.conversationContext.currentTopic = 'guessing_game';
+            return "You tell me! What should I guess? 😊";
+        }
+        
+        return null;
+    }
+    
+    handleWaitingResponse(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        console.log('handleWaitingResponse called with:', message);
+        console.log('waitingFor:', this.conversationContext.waitingFor);
+        
+        // Handle age response - only if we're actually waiting for age
+        if (this.conversationContext.waitingFor === 'age') {
+            console.log('Processing age response');
+            const ageMatch = message.match(/^(\d+)$/);
+            if (ageMatch) {
+                const age = parseInt(ageMatch[1]);
+                console.log('Age matched:', age);
+                // Validate age is reasonable
+                if (age >= 1 && age <= 120) {
+                    this.conversationContext.waitingFor = null;
+                    this.conversationContext.currentTopic = null;
+                    return `You are ${age}! 🎉`;
+                }
+            }
+        }
+        
+        // Handle name response - only if we're actually waiting for name
+        if (this.conversationContext.waitingFor === 'name') {
+            const nameMatch = message.match(/^[a-zA-Z]+$/);
+            if (nameMatch) {
+                const name = message.trim();
+                this.conversationContext.waitingFor = null;
+                this.conversationContext.currentTopic = null;
+                return `Your name is ${name}! Nice to meet you! 😊`;
+            }
+        }
+        
+        // Handle general response - only if we're actually waiting for general info
+        if (this.conversationContext.waitingFor === 'general') {
+            this.conversationContext.waitingFor = null;
+            this.conversationContext.currentTopic = null;
+            return `Got it! Thanks for telling me! 😊`;
+        }
+        
+        // If we're waiting for something but the response doesn't match, clear the context
+        if (this.conversationContext.waitingFor) {
+            this.conversationContext.waitingFor = null;
+            this.conversationContext.currentTopic = null;
+        }
+        
+        return null;
+    }
+    
+    resetConversationContext() {
+        this.conversationContext = {
+            currentTopic: null,
+            waitingFor: null,
+            lastQuestion: null,
+            lastResponse: null,
+            conversationHistory: []
+        };
+    }
+    
+    handleGreetingQuery(message) {
+        const lowerMessage = message.toLowerCase().trim();
+        
+        // Simple greetings that should get friendly responses
+        const greetings = [
+            'hey', 'hello', 'hi', 'hi there', 'hello there', 'hey there',
+            'good morning', 'good afternoon', 'good evening', 'good night',
+            'morning', 'afternoon', 'evening', 'night'
+        ];
+        
+        if (greetings.includes(lowerMessage)) {
+            const responses = [
+                `Hey there! 👋 How are you doing today?`,
+                `Hello! 😊 Nice to see you! How's your day going?`,
+                `Hi! 👋 How are you feeling today?`,
+                `Hey! 😊 Great to chat with you! What's on your mind?`,
+                `Hello there! 👋 How can I help you today?`,
+                `Hi there! 😊 How's everything going?`,
+                `Hey! 👋 What would you like to talk about?`,
+                `Hello! 😊 I'm here to help! What's up?`
+            ];
+            
+            return this.getRandomResponse(responses);
+        }
+        
+        return null;
+    }
+    
+    handleAgeCalculationQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check for age calculation patterns
+        const agePatterns = [
+            /if i was born in (\d{4}) how old (am i|i am) now/i,
+            /i was born in (\d{4}) how old (am i|i am) now/i,
+            /born in (\d{4}) how old (am i|i am) now/i,
+            /if i was born (\d{4}) how old (am i|i am) now/i,
+            /i was born (\d{4}) how old (am i|i am) now/i,
+            /born (\d{4}) how old (am i|i am) now/i,
+            /age if born in (\d{4})/i,
+            /age if born (\d{4})/i,
+            /how old (am i|i am) if born in (\d{4})/i,
+            /how old (am i|i am) if born (\d{4})/i
+        ];
+        
+        for (const pattern of agePatterns) {
+            const match = message.match(pattern);
+            if (match) {
+                const birthYear = parseInt(match[1] || match[2]);
+                const currentYear = new Date().getFullYear();
+                const age = currentYear - birthYear;
+                
+                if (age < 0) {
+                    return `That birth year (${birthYear}) is in the future! Are you sure about that? 😊`;
+                } else if (age > 150) {
+                    return `That would make you ${age} years old, which seems unlikely! Are you sure about the birth year ${birthYear}? 😊`;
+                } else {
+                    return `If you were born in ${birthYear}, you would be ${age} years old now! 🎂`;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    handleCookingQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Common cooking queries
+        const cookingQueries = {
+            'how to make noodles': `Here's how to make basic noodles! 🍜
+
+**Ingredients:**
+- 2 cups all-purpose flour
+- 1 egg
+- 1/2 cup water
+- 1/2 tsp salt
+
+**Instructions:**
+1. Mix flour and salt in a bowl
+2. Beat egg and water together
+3. Gradually add wet ingredients to flour, kneading until smooth
+4. Let dough rest for 30 minutes
+5. Roll out dough and cut into thin strips
+6. Boil in salted water for 3-5 minutes
+7. Drain and serve with your favorite sauce!
+
+**Tip:** You can also buy pre-made noodles for convenience! 😊`,
+
+            'how to cook noodles': `Here's how to cook noodles! 🍜
+
+**Basic Cooking Method:**
+1. Bring a large pot of water to boil
+2. Add salt to the water (about 1 tbsp per gallon)
+3. Add noodles and stir gently
+4. Cook according to package directions (usually 8-12 minutes)
+5. Test for doneness - noodles should be tender but firm
+6. Drain and rinse with cold water if making a cold dish
+7. Serve with your favorite sauce or broth!
+
+**Cooking Tips:**
+- Don't break noodles before cooking
+- Stir occasionally to prevent sticking
+- Save some pasta water for sauces
+- Don't overcook - aim for "al dente" texture 😊`,
+
+            'how to make pasta': `Here's how to make fresh pasta! 🍝
+
+**Ingredients:**
+- 2 cups all-purpose flour
+- 3 large eggs
+- 1/2 tsp salt
+- 1 tbsp olive oil
+
+**Instructions:**
+1. Mix flour and salt on a clean surface
+2. Make a well in the center and add eggs
+3. Gradually mix flour into eggs with a fork
+4. Knead dough for 10 minutes until smooth
+5. Wrap in plastic and rest for 30 minutes
+6. Roll out dough and cut into desired shapes
+7. Cook in boiling salted water for 2-3 minutes
+8. Drain and serve with sauce!
+
+**Popular Shapes:** Spaghetti, fettuccine, lasagna sheets 😊`,
+
+            'how to cook pasta': `Here's how to cook pasta perfectly! 🍝
+
+**Perfect Pasta Method:**
+1. Use a large pot with plenty of water
+2. Bring water to a rolling boil
+3. Add salt (about 1 tbsp per gallon of water)
+4. Add pasta and stir immediately
+5. Cook according to package time (usually 8-12 minutes)
+6. Test for "al dente" - firm but not hard
+7. Reserve 1 cup of pasta water before draining
+8. Drain pasta and serve with sauce
+
+**Pro Tips:**
+- Use plenty of water (4-6 quarts for 1 pound pasta)
+- Don't add oil to the water
+- Stir occasionally to prevent sticking
+- Save pasta water to thicken sauces
+- Don't rinse unless making a cold dish 😊`,
+
+            'how to make rice': `Here's how to make perfect rice! 🍚
+
+**Basic Rice Method:**
+1. Rinse rice until water runs clear
+2. Add rice and water to pot (1:2 ratio for white rice)
+3. Bring to boil, then reduce heat to low
+4. Cover and simmer for 18-20 minutes
+5. Remove from heat and let stand 5 minutes
+6. Fluff with fork and serve!
+
+**Water Ratios:**
+- White rice: 1 cup rice + 2 cups water
+- Brown rice: 1 cup rice + 2.5 cups water
+- Jasmine rice: 1 cup rice + 1.5 cups water
+
+**Tips:**
+- Don't lift the lid while cooking
+- Let it rest after cooking
+- Use a heavy-bottomed pot
+- Season with salt if desired 😊`,
+
+            'how to cook rice': `Here's how to cook rice perfectly! 🍚
+
+**Perfect Rice Method:**
+1. Rinse rice in cold water until water runs clear
+2. Add rice and water to pot (follow package directions)
+3. Bring to a boil over medium-high heat
+4. Reduce heat to low and cover tightly
+5. Simmer for 18-20 minutes (don't lift lid!)
+6. Remove from heat and let stand 5 minutes
+7. Fluff with fork and serve
+
+**Water Ratios:**
+- White rice: 1:2 (rice:water)
+- Brown rice: 1:2.5
+- Basmati: 1:1.5
+- Wild rice: 1:3
+
+**Pro Tips:**
+- Use a heavy-bottomed pot
+- Don't stir while cooking
+- Let it rest after cooking
+- Season with salt if desired 😊`,
+
+            'how to make pizza': `Here's how to make Italian pizza! 🍕
+
+**Ingredients:**
+- 3 cups all-purpose flour
+- 1 tsp salt
+- 1 tsp sugar
+- 2 1/4 tsp active dry yeast
+- 1 cup warm water
+- 2 tbsp olive oil
+
+**Instructions:**
+1. Mix yeast, sugar, and warm water, let stand 5 minutes
+2. Mix flour and salt in a large bowl
+3. Add yeast mixture and olive oil, knead for 10 minutes
+4. Let dough rise for 1 hour in warm place
+5. Punch down and divide into 2 balls
+6. Roll out each ball into 12-inch circle
+7. Add toppings and bake at 450°F for 12-15 minutes
+
+**Classic Toppings:** Tomato sauce, mozzarella, basil, olive oil 😊`,
+
+            'how to make lasagna': `Here's how to make Italian lasagna! 🍝
+
+**Ingredients:**
+- 12 lasagna noodles
+- 1 lb ground beef
+- 1 onion, chopped
+- 3 cloves garlic, minced
+- 2 cups marinara sauce
+- 15 oz ricotta cheese
+- 2 cups mozzarella, shredded
+- 1/2 cup parmesan cheese
+- 1 egg
+- Salt and pepper
+
+**Instructions:**
+1. Cook lasagna noodles according to package
+2. Brown beef with onion and garlic
+3. Add marinara sauce and simmer 10 minutes
+4. Mix ricotta, egg, and parmesan
+5. Layer: noodles, meat sauce, ricotta mixture, mozzarella
+6. Repeat layers, ending with mozzarella
+7. Bake at 375°F for 25 minutes, covered
+8. Uncover and bake 15 more minutes
+
+**Tip:** Let it rest 10 minutes before cutting! 😊`,
+
+            'how to make risotto': `Here's how to make Italian risotto! 🍚
+
+**Ingredients:**
+- 1 1/2 cups arborio rice
+- 4 cups chicken broth
+- 1 onion, finely chopped
+- 2 cloves garlic, minced
+- 1/2 cup white wine
+- 1/2 cup parmesan cheese
+- 2 tbsp butter
+- 2 tbsp olive oil
+- Salt and pepper
+
+**Instructions:**
+1. Heat broth in a saucepan, keep warm
+2. Sauté onion and garlic in olive oil
+3. Add rice, stir for 2 minutes
+4. Add wine, stir until absorbed
+5. Add 1 cup broth, stir until absorbed
+6. Continue adding broth 1/2 cup at a time
+7. Cook until rice is creamy (20-25 minutes)
+8. Stir in butter and parmesan, season to taste
+
+**Classic Variations:** Mushroom, seafood, or saffron risotto 😊`,
+
+            'how to make paella': `Here's how to make Spanish paella! 🥘
+
+**Ingredients:**
+- 2 cups short-grain rice (bomba or arborio)
+- 4 cups chicken broth
+- 1 lb chicken thighs
+- 1/2 lb shrimp
+- 1/2 cup peas
+- 1 red bell pepper, sliced
+- 1 onion, chopped
+- 3 cloves garlic, minced
+- 1 tsp saffron threads
+- 2 tbsp olive oil
+- Salt and pepper
+
+**Instructions:**
+1. Heat oil in paella pan or large skillet
+2. Season and brown chicken, remove
+3. Sauté onion, garlic, and pepper
+4. Add rice, stir for 2 minutes
+5. Add saffron and broth, bring to boil
+6. Add chicken back, simmer 15 minutes
+7. Add shrimp and peas, cook 5 more minutes
+8. Let rest 5 minutes before serving
+
+**Tip:** Don't stir after adding broth! 😊`,
+
+            'how to make tacos': `Here's how to make Mexican tacos! 🌮
+
+**Ingredients:**
+- 1 lb ground beef or chicken
+- 1 packet taco seasoning
+- 12 corn tortillas
+- 1 cup shredded lettuce
+- 1 cup diced tomatoes
+- 1 cup shredded cheese
+- 1/2 cup sour cream
+- 1/2 cup salsa
+- 1 onion, diced
+
+**Instructions:**
+1. Brown meat in skillet over medium heat
+2. Add taco seasoning and water, simmer 5 minutes
+3. Warm tortillas in dry skillet or microwave
+4. Fill tortillas with meat
+5. Top with lettuce, tomatoes, cheese
+6. Add sour cream and salsa
+7. Serve immediately
+
+**Variations:** Fish tacos, vegetarian with beans, or al pastor! 😊`,
+
+            'how to make enchiladas': `Here's how to make Mexican enchiladas! 🌯
+
+**Ingredients:**
+- 12 corn tortillas
+- 2 cups shredded chicken
+- 2 cups enchilada sauce
+- 2 cups shredded cheese
+- 1 onion, diced
+- 1/2 cup sour cream
+- 2 tbsp oil
+
+**Instructions:**
+1. Heat oil in skillet, warm tortillas briefly
+2. Dip each tortilla in enchilada sauce
+3. Fill with chicken, cheese, and onion
+4. Roll up and place seam-side down in baking dish
+5. Pour remaining sauce over enchiladas
+6. Top with remaining cheese
+7. Bake at 350°F for 20-25 minutes
+8. Serve with sour cream
+
+**Tip:** Let them cool 5 minutes before serving! 😊`,
+
+            'how to make nasi lemak': `Here's how to make Malaysian nasi lemak! 🍚
+
+**Ingredients:**
+- 2 cups jasmine rice
+- 1 can coconut milk
+- 2 pandan leaves (optional)
+- 1 tsp salt
+- 4 eggs
+- 1 cucumber, sliced
+- 1/2 cup peanuts
+- 1/2 cup ikan bilis (anchovies)
+- Sambal chili sauce
+
+**Instructions:**
+1. Rinse rice until water runs clear
+2. Add coconut milk, salt, and pandan leaves
+3. Cook rice in rice cooker or on stovetop
+4. Fry peanuts and anchovies until crispy
+5. Boil eggs for 6-7 minutes, peel and slice
+6. Serve rice with eggs, cucumber, peanuts, anchovies
+7. Add sambal chili sauce on the side
+
+**Traditional Sides:** Fried chicken, beef rendang, or curry 😊`,
+
+            'how to make rendang': `Here's how to make Malaysian beef rendang! 🥘
+
+**Ingredients:**
+- 2 lbs beef chuck, cubed
+- 2 cans coconut milk
+- 6 shallots, minced
+- 4 cloves garlic, minced
+- 2-inch ginger, minced
+- 2-inch galangal, minced
+- 4 lemongrass stalks, bruised
+- 4 kaffir lime leaves
+- 2 tbsp chili paste
+- 1 tsp turmeric powder
+- Salt to taste
+
+**Instructions:**
+1. Blend shallots, garlic, ginger, galangal into paste
+2. Heat oil, sauté paste until fragrant
+3. Add beef, brown on all sides
+4. Add coconut milk, lemongrass, lime leaves
+5. Simmer on low heat for 2-3 hours
+6. Stir occasionally until liquid reduces
+7. Add chili paste and turmeric
+8. Cook until meat is tender and sauce thickens
+
+**Serve with:** Nasi lemak, rice, or bread 😊`,
+
+            'how to make biryani': `Here's how to make Bangladeshi biryani! 🍚
+
+**Ingredients:**
+- 2 cups basmati rice
+- 1 lb chicken or beef
+- 2 onions, sliced
+- 4 cloves garlic, minced
+- 1-inch ginger, minced
+- 2 cups yogurt
+- 1/2 cup ghee
+- Whole spices (cardamom, cinnamon, cloves)
+- Saffron strands
+- 1/2 cup milk
+- Salt to taste
+
+**Instructions:**
+1. Marinate meat with yogurt, garlic, ginger, spices
+2. Soak saffron in warm milk
+3. Parboil rice with whole spices
+4. Layer: meat, rice, saffron milk, fried onions
+5. Repeat layers, ending with rice
+6. Cover tightly, cook on low heat 30 minutes
+7. Let rest 10 minutes before serving
+
+**Variations:** Chicken, beef, or vegetable biryani 😊`,
+
+            'how to make curry': `Here's how to make Bangladeshi curry! 🍛
+
+**Ingredients:**
+- 1 lb chicken or beef
+- 2 onions, finely chopped
+- 4 cloves garlic, minced
+- 1-inch ginger, minced
+- 2 tomatoes, chopped
+- 2 tbsp oil
+- 1 tsp turmeric powder
+- 1 tsp chili powder
+- 1 tsp cumin powder
+- 1 tsp coriander powder
+- Salt to taste
+
+**Instructions:**
+1. Heat oil, sauté onions until golden
+2. Add garlic and ginger, cook 2 minutes
+3. Add meat, brown on all sides
+4. Add spices, cook 1 minute
+5. Add tomatoes, cook until soft
+6. Add water, simmer 20-30 minutes
+7. Cook until meat is tender and sauce thickens
+8. Garnish with fresh cilantro
+
+**Serve with:** Rice, naan, or roti 😊`,
+
+            'how to make khichuri': `Here's how to make Bangladeshi khichuri! 🍚
+
+**Ingredients:**
+- 1 cup rice
+- 1/2 cup red lentils (masoor dal)
+- 1 onion, chopped
+- 2 cloves garlic, minced
+- 1-inch ginger, minced
+- 2 tbsp oil
+- 1 tsp turmeric powder
+- 1 tsp cumin seeds
+- 2 bay leaves
+- 4 cups water
+- Salt to taste
+
+**Instructions:**
+1. Wash rice and lentils together
+2. Heat oil, add cumin seeds and bay leaves
+3. Add onion, garlic, ginger, sauté until golden
+4. Add rice and lentils, stir for 2 minutes
+5. Add water, turmeric, and salt
+6. Bring to boil, then simmer 20-25 minutes
+7. Stir occasionally until thick and creamy
+8. Let rest 5 minutes before serving
+
+**Serve with:** Fried eggs, pickles, or vegetables 😊`,
+
+            'how to make bhuna': `Here's how to make Bangladeshi bhuna! 🍛
+
+**Ingredients:**
+- 1 lb chicken or beef
+- 2 onions, finely chopped
+- 4 cloves garlic, minced
+- 1-inch ginger, minced
+- 2 tomatoes, chopped
+- 2 tbsp oil
+- 1 tsp turmeric powder
+- 1 tsp chili powder
+- 1 tsp cumin powder
+- 1 tsp coriander powder
+- 1 tsp garam masala
+- Salt to taste
+
+**Instructions:**
+1. Heat oil, sauté onions until dark golden
+2. Add garlic and ginger, cook 2 minutes
+3. Add meat, brown well on all sides
+4. Add spices, cook 1 minute
+5. Add tomatoes, cook until soft
+6. Add water, simmer 30-40 minutes
+7. Cook until meat is tender and sauce thickens
+8. Add garam masala at the end
+
+**Serve with:** Rice, naan, or roti 😊`,
+
+            'how to make carbonara': `Here's how to make Italian carbonara! 🍝
+
+**Ingredients:**
+- 1 lb spaghetti
+- 4 large eggs
+- 1 cup parmesan cheese, grated
+- 6 slices pancetta or bacon
+- 4 cloves garlic, minced
+- 1/4 cup pasta water
+- Black pepper
+- Salt
+
+**Instructions:**
+1. Cook pasta in salted water, reserve 1 cup water
+2. Cook pancetta until crispy, remove from pan
+3. Add garlic to pan, cook 30 seconds
+4. Beat eggs and parmesan in a bowl
+5. Add hot pasta to pan, remove from heat
+6. Quickly stir in egg mixture and pasta water
+7. Add pancetta and black pepper
+8. Serve immediately with extra parmesan
+
+**Tip:** Don't let eggs scramble! 😊`,
+
+            'how to make tiramisu': `Here's how to make Italian tiramisu! 🍰
+
+**Ingredients:**
+- 6 egg yolks
+- 1 cup sugar
+- 1 1/4 cups mascarpone cheese
+- 1 3/4 cups heavy cream
+- 1 package ladyfinger cookies
+- 1 cup strong coffee, cooled
+- 2 tbsp coffee liqueur (optional)
+- Cocoa powder for dusting
+
+**Instructions:**
+1. Beat egg yolks and sugar until pale
+2. Add mascarpone, beat until smooth
+3. Whip cream to stiff peaks, fold into mascarpone
+4. Mix coffee and liqueur in shallow dish
+5. Dip ladyfingers in coffee mixture
+6. Layer half the ladyfingers in dish
+7. Spread half the mascarpone mixture
+8. Repeat layers, dust with cocoa
+9. Refrigerate 4 hours or overnight
+
+**Tip:** Use strong espresso for best flavor! 😊`,
+
+            'how to make gnocchi': `Here's how to make Italian gnocchi! 🥟
+
+**Ingredients:**
+- 2 lbs russet potatoes
+- 2 cups all-purpose flour
+- 2 egg yolks
+- 1 tsp salt
+- 1/4 tsp nutmeg
+
+**Instructions:**
+1. Bake potatoes at 400°F for 1 hour
+2. Scoop out hot potato flesh, mash well
+3. Add flour, egg yolks, salt, and nutmeg
+4. Knead gently until smooth dough forms
+5. Roll into 1/2-inch ropes
+6. Cut into 1-inch pieces
+7. Press with fork to create ridges
+8. Boil in salted water for 2-3 minutes
+9. Serve with your favorite sauce
+
+**Classic Sauces:** Pesto, marinara, or brown butter sage 😊`,
+
+            'how to make tortilla': `Here's how to make Spanish tortilla! 🥔
+
+**Ingredients:**
+- 6 large eggs
+- 4 medium potatoes, thinly sliced
+- 1 onion, thinly sliced
+- 1/2 cup olive oil
+- Salt and pepper
+
+**Instructions:**
+1. Heat oil in large skillet over medium heat
+2. Add potatoes and onion, cook 15-20 minutes
+3. Beat eggs with salt and pepper
+4. Add cooked potatoes to eggs
+5. Heat clean skillet with 2 tbsp oil
+6. Pour egg mixture into skillet
+7. Cook 5 minutes, then flip carefully
+8. Cook 5 more minutes until set
+9. Let rest 5 minutes before cutting
+
+**Serve with:** Bread and aioli sauce 😊`,
+
+            'how to make gazpacho': `Here's how to make Spanish gazpacho! 🍅
+
+**Ingredients:**
+- 6 large tomatoes, chopped
+- 1 cucumber, peeled and chopped
+- 1 red bell pepper, chopped
+- 1 small onion, chopped
+- 2 cloves garlic, minced
+- 1/4 cup olive oil
+- 2 tbsp red wine vinegar
+- 1 cup bread, soaked in water
+- Salt and pepper
+
+**Instructions:**
+1. Soak bread in water for 10 minutes
+2. Combine all vegetables in blender
+3. Add soaked bread, olive oil, vinegar
+4. Blend until smooth
+5. Strain through fine mesh sieve
+6. Season with salt and pepper
+7. Chill for at least 2 hours
+8. Serve cold with croutons
+
+**Garnish with:** Chopped vegetables and croutons 😊`,
+
+            'how to make churros': `Here's how to make Spanish churros! 🍩
+
+**Ingredients:**
+- 1 cup water
+- 1/2 cup butter
+- 1 cup all-purpose flour
+- 3 eggs
+- 1/4 tsp salt
+- 1/4 cup sugar
+- 1 tsp cinnamon
+- Oil for frying
+
+**Instructions:**
+1. Bring water and butter to boil
+2. Add flour and salt, stir until smooth
+3. Cool slightly, add eggs one at a time
+4. Transfer to piping bag with star tip
+5. Heat oil to 375°F
+6. Pipe 4-inch strips into hot oil
+7. Fry until golden brown, 2-3 minutes
+8. Drain on paper towels
+9. Mix sugar and cinnamon, dust churros
+
+**Serve with:** Hot chocolate or dulce de leche 😊`,
+
+            'how to make guacamole': `Here's how to make Mexican guacamole! 🥑
+
+**Ingredients:**
+- 3 ripe avocados
+- 1 lime, juiced
+- 1/2 tsp salt
+- 1/2 tsp cumin
+- 1/2 onion, diced
+- 2 roma tomatoes, diced
+- 1 tbsp cilantro, chopped
+- 1 jalapeño, minced (optional)
+
+**Instructions:**
+1. Cut avocados in half, remove pits
+2. Scoop flesh into bowl, mash with fork
+3. Add lime juice and salt immediately
+4. Add cumin, onion, tomatoes, cilantro
+5. Add jalapeño if desired
+6. Mix gently, don't over-mash
+7. Taste and adjust seasoning
+8. Serve immediately
+
+**Tip:** Keep avocado pit in bowl to prevent browning! 😊`,
+
+            'how to make mole': `Here's how to make Mexican mole! 🍫
+
+**Ingredients:**
+- 3 dried ancho chiles
+- 3 dried pasilla chiles
+- 2 tbsp sesame seeds
+- 2 tbsp pumpkin seeds
+- 1/4 cup almonds
+- 1/4 cup raisins
+- 2 tbsp chocolate chips
+- 1 onion, chopped
+- 3 cloves garlic
+- 2 tbsp oil
+- 2 cups chicken broth
+- Salt to taste
+
+**Instructions:**
+1. Toast chiles, seeds, and almonds separately
+2. Soak chiles in hot water 20 minutes
+3. Sauté onion and garlic in oil
+4. Blend all ingredients until smooth
+5. Strain through fine mesh sieve
+6. Cook in oil for 10 minutes
+7. Add broth, simmer 30 minutes
+8. Season with salt
+
+**Serve with:** Chicken, turkey, or enchiladas 😊`,
+
+            'how to make satay': `Here's how to make Malaysian satay! 🍖
+
+**Ingredients:**
+- 1 lb chicken or beef, cubed
+- 2 tbsp oil
+- 1/2 cup coconut milk
+- 2 tbsp soy sauce
+- 1 tbsp fish sauce
+- 1 tbsp sugar
+- 1 tsp turmeric powder
+- 1 tsp coriander powder
+- 1 tsp cumin powder
+- Bamboo skewers
+
+**Instructions:**
+1. Soak bamboo skewers in water 30 minutes
+2. Mix coconut milk, soy sauce, fish sauce, sugar
+3. Add spices, mix well
+4. Marinate meat for 2 hours
+5. Thread meat onto skewers
+6. Grill over medium heat 8-10 minutes
+7. Turn occasionally until cooked
+8. Serve with peanut sauce
+
+**Peanut Sauce:** Blend peanuts, coconut milk, chili, lime 😊`,
+
+            'how to make laksa': `Here's how to make Malaysian laksa! 🍜
+
+**Ingredients:**
+- 1 lb rice noodles
+- 1 lb shrimp or chicken
+- 2 cans coconut milk
+- 4 shallots, minced
+- 4 cloves garlic, minced
+- 2-inch ginger, minced
+- 2 tbsp laksa paste
+- 2 cups bean sprouts
+- 1 cucumber, julienned
+- 4 hard-boiled eggs
+- 1/2 cup mint leaves
+- 1/2 cup cilantro
+
+**Instructions:**
+1. Cook noodles according to package
+2. Sauté shallots, garlic, ginger
+3. Add laksa paste, cook 2 minutes
+4. Add coconut milk, bring to boil
+5. Add shrimp/chicken, cook 5 minutes
+6. Add bean sprouts, cook 1 minute
+7. Serve noodles in bowls
+8. Top with soup, eggs, cucumber, herbs
+
+**Tip:** Use store-bought laksa paste for convenience! 😊`,
+
+            'how to make roti canai': `Here's how to make Malaysian roti canai! 🥞
+
+**Ingredients:**
+- 2 cups all-purpose flour
+- 1/2 cup water
+- 1/2 cup milk
+- 1 egg
+- 1 tsp salt
+- 1/2 cup ghee or oil
+
+**Instructions:**
+1. Mix flour, salt, egg, water, milk
+2. Knead until smooth, rest 30 minutes
+3. Divide into 8 balls
+4. Flatten each ball with oil
+5. Stretch dough very thin
+6. Fold into square shape
+7. Cook on hot griddle 2-3 minutes each side
+8. Serve with curry or dhal
+
+**Serve with:** Chicken curry or lentil dhal 😊`,
+
+            'how to make korma': `Here's how to make Bangladeshi korma! 🍛
+
+**Ingredients:**
+- 1 lb chicken or beef
+- 1 cup yogurt
+- 1/2 cup cream
+- 2 onions, finely chopped
+- 4 cloves garlic, minced
+- 1-inch ginger, minced
+- 1/2 cup cashews, ground
+- 2 tbsp oil
+- 1 tsp cardamom powder
+- 1 tsp cinnamon powder
+- 1 tsp nutmeg powder
+- Salt to taste
+
+**Instructions:**
+1. Marinate meat with yogurt and spices
+2. Heat oil, sauté onions until golden
+3. Add garlic and ginger, cook 2 minutes
+4. Add meat, brown on all sides
+5. Add ground cashews
+6. Add cream, simmer 20-30 minutes
+7. Cook until meat is tender
+8. Garnish with fried onions
+
+**Serve with:** Rice, naan, or roti 😊`,
+
+            'how to make pulao': `Here's how to make Bangladeshi pulao! 🍚
+
+**Ingredients:**
+- 2 cups basmati rice
+- 1 lb chicken or beef
+- 2 onions, sliced
+- 4 cloves garlic, minced
+- 1-inch ginger, minced
+- 1/2 cup ghee
+- Whole spices (cardamom, cinnamon, cloves, bay leaves)
+- 1/2 cup raisins
+- 1/2 cup cashews
+- Salt to taste
+
+**Instructions:**
+1. Marinate meat with garlic, ginger, spices
+2. Heat ghee, add whole spices
+3. Add onions, cook until golden
+4. Add meat, brown on all sides
+5. Add rice, stir for 2 minutes
+6. Add water (1:2 ratio), bring to boil
+7. Reduce heat, cover, simmer 20 minutes
+8. Add raisins and cashews
+9. Let rest 5 minutes before serving
+
+**Serve with:** Raita, pickles, or salad 😊`
+        };
+        
+        // Check for cooking-related keywords
+        const cookingKeywords = ['noodles', 'pasta', 'rice', 'cook', 'make', 'pizza', 'lasagna', 'risotto', 'paella', 'tacos', 'enchiladas', 'nasi lemak', 'rendang', 'biryani', 'curry', 'carbonara', 'tiramisu', 'gnocchi', 'tortilla', 'gazpacho', 'churros', 'guacamole', 'mole', 'satay', 'laksa', 'roti canai', 'khichuri', 'bhuna', 'korma', 'pulao'];
+        const hasCookingKeyword = cookingKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (!hasCookingKeyword) {
+            return null;
+        }
+        
+        // Check for specific cooking queries
+        for (const [query, response] of Object.entries(cookingQueries)) {
+            const queryKeywords = query.toLowerCase().split(' ');
+            const hasAllKeywords = queryKeywords.every(keyword => 
+                lowerMessage.includes(keyword) || keyword === 'how' || keyword === 'to'
+            );
+            
+            if (hasAllKeywords) {
+                return response;
+            }
+        }
+        
+        return null;
+    }
+    
+    handleTimezoneDateQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check if the message contains both date keywords and location keywords
+        const dateKeywords = ['day', 'date'];
+        const hasDateKeyword = dateKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (!hasDateKeyword) {
+            return null;
+        }
+        
+        // Common timezone mappings (same as in handleTimezoneQuery)
+        const timezoneMap = {
+            'japan': 'Asia/Tokyo',
+            'tokyo': 'Asia/Tokyo',
+            'berlin': 'Europe/Berlin',
+            'germany': 'Europe/Berlin',
+            'london': 'Europe/London',
+            'uk': 'Europe/London',
+            'england': 'Europe/London',
+            'new york': 'America/New_York',
+            'nyc': 'America/New_York',
+            'los angeles': 'America/Los_Angeles',
+            'la': 'America/Los_Angeles',
+            'california': 'America/Los_Angeles',
+            'paris': 'Europe/Paris',
+            'france': 'Europe/Paris',
+            'rome': 'Europe/Rome',
+            'italy': 'Europe/Rome',
+            'madrid': 'Europe/Madrid',
+            'spain': 'Europe/Madrid',
+            'moscow': 'Europe/Moscow',
+            'russia': 'Europe/Moscow',
+            'beijing': 'Asia/Shanghai',
+            'china': 'Asia/Shanghai',
+            'seoul': 'Asia/Seoul',
+            'korea': 'Asia/Seoul',
+            'sydney': 'Australia/Sydney',
+            'australia': 'Australia/Sydney',
+            'mumbai': 'Asia/Kolkata',
+            'india': 'Asia/Kolkata',
+            'delhi': 'Asia/Kolkata',
+            'dubai': 'Asia/Dubai',
+            'uae': 'Asia/Dubai',
+            'singapore': 'Asia/Singapore',
+            'bangkok': 'Asia/Bangkok',
+            'thailand': 'Asia/Bangkok',
+            'jakarta': 'Asia/Jakarta',
+            'indonesia': 'Asia/Jakarta',
+            'manila': 'Asia/Manila',
+            'philippines': 'Asia/Manila',
+            'hanoi': 'Asia/Ho_Chi_Minh',
+            'vietnam': 'Asia/Ho_Chi_Minh',
+            'kuala lumpur': 'Asia/Kuala_Lumpur',
+            'malaysia': 'Asia/Kuala_Lumpur',
+            'cyberjaya': 'Asia/Kuala_Lumpur',
+            'putrajaya': 'Asia/Kuala_Lumpur',
+            'shah alam': 'Asia/Kuala_Lumpur',
+            'petaling jaya': 'Asia/Kuala_Lumpur',
+            'subang jaya': 'Asia/Kuala_Lumpur',
+            'klang': 'Asia/Kuala_Lumpur',
+            'george town': 'Asia/Kuala_Lumpur',
+            'penang': 'Asia/Kuala_Lumpur',
+            'ipoh': 'Asia/Kuala_Lumpur',
+            'johor bahru': 'Asia/Kuala_Lumpur',
+            'johor': 'Asia/Kuala_Lumpur',
+            'alor setar': 'Asia/Kuala_Lumpur',
+            'kota kinabalu': 'Asia/Kuala_Lumpur',
+            'kuching': 'Asia/Kuala_Lumpur',
+            'miri': 'Asia/Kuala_Lumpur',
+            'sibu': 'Asia/Kuala_Lumpur',
+            'sandakan': 'Asia/Kuala_Lumpur',
+            'taiping': 'Asia/Kuala_Lumpur',
+            'seremban': 'Asia/Kuala_Lumpur',
+            'nilai': 'Asia/Kuala_Lumpur',
+            'port dickson': 'Asia/Kuala_Lumpur',
+            'malacca city': 'Asia/Kuala_Lumpur',
+            'dhaka': 'Asia/Dhaka',
+            'bangladesh': 'Asia/Dhaka',
+            'tangail': 'Asia/Dhaka',
+            'tangail city': 'Asia/Dhaka',
+            'chittagong': 'Asia/Dhaka',
+            'sylhet': 'Asia/Dhaka',
+            'rajshahi': 'Asia/Dhaka',
+            'khulna': 'Asia/Dhaka',
+            'barisal': 'Asia/Dhaka',
+            'rangpur': 'Asia/Dhaka',
+            'mymensingh': 'Asia/Dhaka',
+            'comilla': 'Asia/Dhaka',
+            'jessore': 'Asia/Dhaka',
+            'bogra': 'Asia/Dhaka',
+            'dinajpur': 'Asia/Dhaka',
+            'pabna': 'Asia/Dhaka',
+            'kustia': 'Asia/Dhaka',
+            'faridpur': 'Asia/Dhaka',
+            'gopalganj': 'Asia/Dhaka',
+            'madaripur': 'Asia/Dhaka',
+            'shariatpur': 'Asia/Dhaka',
+            'rajbari': 'Asia/Dhaka',
+            'magura': 'Asia/Dhaka',
+            'jhenaidah': 'Asia/Dhaka',
+            'narail': 'Asia/Dhaka',
+            'satkhira': 'Asia/Dhaka',
+            'bagerhat': 'Asia/Dhaka',
+            'pirojpur': 'Asia/Dhaka',
+            'barguna': 'Asia/Dhaka',
+            'patuakhali': 'Asia/Dhaka',
+            'bhola': 'Asia/Dhaka',
+            'lakshmipur': 'Asia/Dhaka',
+            'noakhali': 'Asia/Dhaka',
+            'feni': 'Asia/Dhaka',
+            'chandpur': 'Asia/Dhaka',
+            'cox\'s bazar': 'Asia/Dhaka',
+            'coxs bazar': 'Asia/Dhaka',
+            'bandarban': 'Asia/Dhaka',
+            'rangamati': 'Asia/Dhaka',
+            'khagrachari': 'Asia/Dhaka',
+            'kolkata': 'Asia/Kolkata',
+            'calcutta': 'Asia/Kolkata',
+            'chennai': 'Asia/Kolkata',
+            'madras': 'Asia/Kolkata',
+            'hyderabad': 'Asia/Kolkata',
+            'bangalore': 'Asia/Kolkata',
+            'bengaluru': 'Asia/Kolkata',
+            'pune': 'Asia/Kolkata',
+            'ahmedabad': 'Asia/Kolkata',
+            'surat': 'Asia/Kolkata',
+            'jaipur': 'Asia/Kolkata',
+            'lucknow': 'Asia/Kolkata',
+            'kanpur': 'Asia/Kolkata',
+            'nagpur': 'Asia/Kolkata',
+            'indore': 'Asia/Kolkata',
+            'thane': 'Asia/Kolkata',
+            'bhopal': 'Asia/Kolkata',
+            'visakhapatnam': 'Asia/Kolkata',
+            'patna': 'Asia/Kolkata',
+            'vadodara': 'Asia/Kolkata',
+            'ghaziabad': 'Asia/Kolkata',
+            'ludhiana': 'Asia/Kolkata',
+            'agra': 'Asia/Kolkata',
+            'nashik': 'Asia/Kolkata',
+            'ranchi': 'Asia/Kolkata',
+            'howrah': 'Asia/Kolkata',
+            'coimbatore': 'Asia/Kolkata',
+            'raipur': 'Asia/Kolkata',
+            'jabalpur': 'Asia/Kolkata',
+            'gwalior': 'Asia/Kolkata',
+            'vijayawada': 'Asia/Kolkata',
+            'jodhpur': 'Asia/Kolkata',
+            'madurai': 'Asia/Kolkata',
+            'guwahati': 'Asia/Kolkata',
+            'chandigarh': 'Asia/Kolkata',
+            'amritsar': 'Asia/Kolkata',
+            'allahabad': 'Asia/Kolkata',
+            'rohtak': 'Asia/Kolkata',
+            'mysore': 'Asia/Kolkata',
+            'aurangabad': 'Asia/Kolkata',
+            'solapur': 'Asia/Kolkata',
+            'bhubaneswar': 'Asia/Kolkata',
+            'jamshedpur': 'Asia/Kolkata',
+            'bhubaneshwar': 'Asia/Kolkata',
+            'varanasi': 'Asia/Kolkata',
+            'srinagar': 'Asia/Kolkata',
+            'salem': 'Asia/Kolkata',
+            'warangal': 'Asia/Kolkata',
+            'dhanbad': 'Asia/Kolkata',
+            'guntur': 'Asia/Kolkata',
+            'amravati': 'Asia/Kolkata',
+            'noida': 'Asia/Kolkata',
+            'bhiwandi': 'Asia/Kolkata',
+            'bhavnagar': 'Asia/Kolkata',
+            'tiruchirappalli': 'Asia/Kolkata',
+            'kota': 'Asia/Kolkata',
+            'ajmer': 'Asia/Kolkata',
+            'calgary': 'America/Edmonton',
+            'edmonton': 'America/Edmonton',
+            'ottawa': 'America/Toronto',
+            'winnipeg': 'America/Winnipeg',
+            'halifax': 'America/Halifax',
+            'st johns': 'America/St_Johns',
+            'newfoundland': 'America/St_Johns',
+            'victoria': 'America/Vancouver',
+            'saskatoon': 'America/Regina',
+            'regina': 'America/Regina',
+            'quebec': 'America/Toronto',
+            'quebec city': 'America/Toronto',
+            'hamilton': 'America/Toronto',
+            'kitchener': 'America/Toronto',
+            'waterloo': 'America/Toronto',
+            'london ontario': 'America/Toronto',
+            'windsor': 'America/Toronto',
+            'kingston': 'America/Toronto',
+            'sudbury': 'America/Toronto',
+            'thunder bay': 'America/Toronto',
+            'saint john': 'America/Halifax',
+            'fredericton': 'America/Halifax',
+            'charlottetown': 'America/Halifax',
+            'whitehorse': 'America/Whitehorse',
+            'yellowknife': 'America/Yellowknife',
+            'iqaluit': 'America/Iqaluit',
+            'nunavut': 'America/Iqaluit',
+            'yukon': 'America/Whitehorse',
+            'northwest territories': 'America/Yellowknife',
+            'dallas': 'America/Chicago',
+            'fort worth': 'America/Chicago',
+            'austin': 'America/Chicago',
+            'san antonio': 'America/Chicago',
+            'el paso': 'America/Denver',
+            'arlington': 'America/Chicago',
+            'corpus christi': 'America/Chicago',
+            'plano': 'America/Chicago',
+            'laredo': 'America/Chicago',
+            'lubbock': 'America/Chicago',
+            'garland': 'America/Chicago',
+            'irving': 'America/Chicago',
+            'amarillo': 'America/Chicago',
+            'grand prairie': 'America/Chicago',
+            'brownsville': 'America/Chicago',
+            'pasadena': 'America/Chicago',
+            'mckinney': 'America/Chicago',
+            'mesa': 'America/Phoenix',
+            'tucson': 'America/Phoenix',
+            'chandler': 'America/Phoenix',
+            'scottsdale': 'America/Phoenix',
+            'glendale': 'America/Phoenix',
+            'gilbert': 'America/Phoenix',
+            'tempe': 'America/Phoenix',
+            'peoria': 'America/Phoenix',
+            'surprise': 'America/Phoenix',
+            'yuma': 'America/Phoenix',
+            'avondale': 'America/Phoenix',
+            'goodyear': 'America/Phoenix',
+            'flagstaff': 'America/Phoenix',
+            'buckeye': 'America/Phoenix',
+            'casa grande': 'America/Phoenix',
+            'lake havasu city': 'America/Phoenix',
+            'maricopa': 'America/Phoenix',
+            'oregon': 'America/Los_Angeles',
+            'portland': 'America/Los_Angeles',
+            'salem': 'America/Los_Angeles',
+            'eugene': 'America/Los_Angeles',
+            'gresham': 'America/Los_Angeles',
+            'hillsboro': 'America/Los_Angeles',
+            'beaverton': 'America/Los_Angeles',
+            'bend': 'America/Los_Angeles',
+            'medford': 'America/Los_Angeles',
+            'springfield': 'America/Los_Angeles',
+            'corvallis': 'America/Los_Angeles',
+            'albany': 'America/Los_Angeles',
+            'tigard': 'America/Los_Angeles',
+            'lake oswego': 'America/Los_Angeles',
+            'keizer': 'America/Los_Angeles',
+            'grant\'s pass': 'America/Los_Angeles',
+            'oregon city': 'America/Los_Angeles',
+            'orlando': 'America/New_York',
+            'tampa': 'America/New_York',
+            'jacksonville': 'America/New_York',
+            'fort lauderdale': 'America/New_York',
+            'tallahassee': 'America/New_York',
+            'gainesville': 'America/New_York',
+            'daytona beach': 'America/New_York',
+            'clearwater': 'America/New_York',
+            'coral springs': 'America/New_York',
+            'cape coral': 'America/New_York',
+            'port st lucie': 'America/New_York',
+            'sarasota': 'America/New_York',
+            'palm bay': 'America/New_York',
+            'pompano beach': 'America/New_York',
+            'hollywood': 'America/New_York',
+            'lakeland': 'America/New_York',
+            'bradenton': 'America/New_York',
+            'fort myers': 'America/New_York',
+            'kissimmee': 'America/New_York',
+            'boynton beach': 'America/New_York',
+            'delray beach': 'America/New_York',
+            'boca raton': 'America/New_York',
+            'west palm beach': 'America/New_York',
+            'palm beach': 'America/New_York',
+            'naples': 'America/New_York',
+            'melbourne': 'America/New_York',
+            'daytona': 'America/New_York',
+            'spokane': 'America/Los_Angeles',
+            'tacoma': 'America/Los_Angeles',
+            'vancouver wa': 'America/Los_Angeles',
+            'bellevue': 'America/Los_Angeles',
+            'kent': 'America/Los_Angeles',
+            'everett': 'America/Los_Angeles',
+            'renton': 'America/Los_Angeles',
+            'yakima': 'America/Los_Angeles',
+            'spokane valley': 'America/Los_Angeles',
+            'federal way': 'America/Los_Angeles',
+            'bellingham': 'America/Los_Angeles',
+            'kennewick': 'America/Los_Angeles',
+            'auburn': 'America/Los_Angeles',
+            'pasco': 'America/Los_Angeles',
+            'marysville': 'America/Los_Angeles',
+            'lakewood': 'America/Los_Angeles',
+            'redmond': 'America/Los_Angeles',
+            'shoreline': 'America/Los_Angeles',
+            'richland': 'America/Los_Angeles',
+            'olympia': 'America/Los_Angeles',
+            'lynnwood': 'America/Los_Angeles',
+            'bremerton': 'America/Los_Angeles',
+            'puyallup': 'America/Los_Angeles',
+            'colorado springs': 'America/Denver',
+            'aurora': 'America/Denver',
+            'fort collins': 'America/Denver',
+            'lakewood': 'America/Denver',
+            'thornton': 'America/Denver',
+            'arvada': 'America/Denver',
+            'westminster': 'America/Denver',
+            'pueblo': 'America/Denver',
+            'boulder': 'America/Denver',
+            'greeley': 'America/Denver',
+            'longmont': 'America/Denver',
+            'grand junction': 'America/Denver',
+            'loveland': 'America/Denver',
+            'broomfield': 'America/Denver',
+            'castle rock': 'America/Denver',
+            'commerce city': 'America/Denver',
+            'parker': 'America/Denver',
+            'littleton': 'America/Denver',
+            'northglenn': 'America/Denver',
+            'wheat ridge': 'America/Denver',
+            'englewood': 'America/Denver',
+            'centennial': 'America/Denver',
+            'highlands ranch': 'America/Denver',
+            'fairbanks': 'America/Anchorage',
+            'juneau': 'America/Anchorage',
+            'sitka': 'America/Anchorage',
+            'ketchikan': 'America/Anchorage',
+            'kenai': 'America/Anchorage',
+            'kodiak': 'America/Anchorage',
+            'bethel': 'America/Anchorage',
+            'palmer': 'America/Anchorage',
+            'wasilla': 'America/Anchorage',
+            'hilo': 'Pacific/Honolulu',
+            'kailua': 'Pacific/Honolulu',
+            'kapolei': 'Pacific/Honolulu',
+            'ewa beach': 'Pacific/Honolulu',
+            'mililani town': 'Pacific/Honolulu',
+            'kihei': 'Pacific/Honolulu',
+            'maui': 'Pacific/Honolulu',
+            'kailua kona': 'Pacific/Honolulu',
+            'kaneohe': 'Pacific/Honolulu',
+            'ewa': 'Pacific/Honolulu',
+            'mililani': 'Pacific/Honolulu',
+            'kahului': 'Pacific/Honolulu',
+            'lahaina': 'Pacific/Honolulu',
+            'waipahu': 'Pacific/Honolulu',
+            'pearl city': 'Pacific/Honolulu',
+            'waimalu': 'Pacific/Honolulu',
+            'nanakuli': 'Pacific/Honolulu',
+            'wahiawa': 'Pacific/Honolulu',
+            'schofield barracks': 'Pacific/Honolulu',
+            'wailuku': 'Pacific/Honolulu',
+            'waianae': 'Pacific/Honolulu',
+            'makakilo city': 'Pacific/Honolulu',
+            'lyon': 'Europe/Paris',
+            'marseille': 'Europe/Paris',
+            'toulouse': 'Europe/Paris',
+            'nice': 'Europe/Paris',
+            'nantes': 'Europe/Paris',
+            'strasbourg': 'Europe/Paris',
+            'montpellier': 'Europe/Paris',
+            'bordeaux': 'Europe/Paris',
+            'lille': 'Europe/Paris',
+            'rennes': 'Europe/Paris',
+            'reims': 'Europe/Paris',
+            'saint-etienne': 'Europe/Paris',
+            'toulon': 'Europe/Paris',
+            'le havre': 'Europe/Paris',
+            'grenoble': 'Europe/Paris',
+            'dijon': 'Europe/Paris',
+            'angers': 'Europe/Paris',
+            'saint-denis': 'Europe/Paris',
+            'villeurbanne': 'Europe/Paris',
+            'le mans': 'Europe/Paris',
+            'aix-en-provence': 'Europe/Paris',
+            'brest': 'Europe/Paris',
+            'nimes': 'Europe/Paris',
+            'tours': 'Europe/Paris',
+            'limoges': 'Europe/Paris',
+            'clermont-ferrand': 'Europe/Paris',
+            'milan': 'Europe/Rome',
+            'naples': 'Europe/Rome',
+            'turin': 'Europe/Rome',
+            'palermo': 'Europe/Rome',
+            'genoa': 'Europe/Rome',
+            'bologna': 'Europe/Rome',
+            'florence': 'Europe/Rome',
+            'bari': 'Europe/Rome',
+            'catania': 'Europe/Rome',
+            'venice': 'Europe/Rome',
+            'verona': 'Europe/Rome',
+            'messina': 'Europe/Rome',
+            'padova': 'Europe/Rome',
+            'trieste': 'Europe/Rome',
+            'taranto': 'Europe/Rome',
+            'brescia': 'Europe/Rome',
+            'parma': 'Europe/Rome',
+            'modena': 'Europe/Rome',
+            'reggio calabria': 'Europe/Rome',
+            'reggio emilia': 'Europe/Rome',
+            'perugia': 'Europe/Rome',
+            'livorno': 'Europe/Rome',
+            'ravenna': 'Europe/Rome',
+            'cagliari': 'Europe/Rome',
+            'rimini': 'Europe/Rome',
+            'salerno': 'Europe/Rome',
+            'ferrara': 'Europe/Rome',
+            'sassari': 'Europe/Rome',
+            'syracuse': 'Europe/Rome',
+            'pescara': 'Europe/Rome',
+            'bergamo': 'Europe/Rome',
+            'vicenza': 'Europe/Rome',
+            'trento': 'Europe/Rome',
+            'forli': 'Europe/Rome',
+            'novara': 'Europe/Rome',
+            'piacenza': 'Europe/Rome',
+            'bolzano': 'Europe/Rome',
+            'udine': 'Europe/Rome',
+            'arezzo': 'Europe/Rome',
+            'lecce': 'Europe/Rome',
+            'barcelona': 'Europe/Madrid',
+            'valencia': 'Europe/Madrid',
+            'sevilla': 'Europe/Madrid',
+            'seville': 'Europe/Madrid',
+            'zaragoza': 'Europe/Madrid',
+            'malaga': 'Europe/Madrid',
+            'murcia': 'Europe/Madrid',
+            'palma': 'Europe/Madrid',
+            'las palmas': 'Europe/Madrid',
+            'bilbao': 'Europe/Madrid',
+            'alicante': 'Europe/Madrid',
+            'cordoba': 'Europe/Madrid',
+            'valladolid': 'Europe/Madrid',
+            'vigo': 'Europe/Madrid',
+            'gijon': 'Europe/Madrid',
+            'hospitalet': 'Europe/Madrid',
+            'la coruna': 'Europe/Madrid',
+            'vitoria': 'Europe/Madrid',
+            'granada': 'Europe/Madrid',
+            'elche': 'Europe/Madrid',
+            'tarrasa': 'Europe/Madrid',
+            'badalona': 'Europe/Madrid',
+            'cartagena': 'Europe/Madrid',
+            'jerez': 'Europe/Madrid',
+            'sabadell': 'Europe/Madrid',
+            'mostoles': 'Europe/Madrid',
+            'alcala de henares': 'Europe/Madrid',
+            'pamplona': 'Europe/Madrid',
+            'fuenlabrada': 'Europe/Madrid',
+            'almeria': 'Europe/Madrid',
+            'san sebastian': 'Europe/Madrid',
+            'leganes': 'Europe/Madrid',
+            'santander': 'Europe/Madrid',
+            'castellon': 'Europe/Madrid',
+            'burgos': 'Europe/Madrid',
+            'albacete': 'Europe/Madrid',
+            'alcorcon': 'Europe/Madrid',
+            'getafe': 'Europe/Madrid',
+            'salamanca': 'Europe/Madrid',
+            'huelva': 'Europe/Madrid',
+            'marbella': 'Europe/Madrid',
+            'logrono': 'Europe/Madrid',
+            'tarragona': 'Europe/Madrid',
+            'leon': 'Europe/Madrid',
+            'cadiz': 'Europe/Madrid',
+            'laredo': 'Europe/Madrid',
+            'jaen': 'Europe/Madrid',
+            'orensa': 'Europe/Madrid',
+            'gerona': 'Europe/Madrid',
+            'lugo': 'Europe/Madrid',
+            'caceres': 'Europe/Madrid',
+            'toledo': 'Europe/Madrid',
+            'ceuta': 'Europe/Madrid',
+            'girona': 'Europe/Madrid',
+            'saint petersburg': 'Europe/Moscow',
+            'novosibirsk': 'Asia/Novosibirsk',
+            'yekaterinburg': 'Asia/Yekaterinburg',
+            'kazan': 'Europe/Moscow',
+            'nizhny novgorod': 'Europe/Moscow',
+            'chelyabinsk': 'Asia/Yekaterinburg',
+            'samara': 'Europe/Samara',
+            'omsk': 'Asia/Omsk',
+            'rostov': 'Europe/Moscow',
+            'ufa': 'Asia/Yekaterinburg',
+            'krasnoyarsk': 'Asia/Krasnoyarsk',
+            'perm': 'Asia/Yekaterinburg',
+            'voronezh': 'Europe/Moscow',
+            'volgograd': 'Europe/Moscow',
+            'krasnodar': 'Europe/Moscow',
+            'saratov': 'Europe/Samara',
+            'tyumen': 'Asia/Yekaterinburg',
+            'tolyatti': 'Europe/Moscow',
+            'izhevsk': 'Asia/Yekaterinburg',
+            'barnaul': 'Asia/Novosibirsk',
+            'ulyanovsk': 'Europe/Moscow',
+            'irkutsk': 'Asia/Irkutsk',
+            'khabarovsk': 'Asia/Vladivostok',
+            'yaroslavl': 'Europe/Moscow',
+            'vladivostok': 'Asia/Vladivostok',
+            'makhachkala': 'Europe/Moscow',
+            'tomsk': 'Asia/Novosibirsk',
+            'orenburg': 'Asia/Yekaterinburg',
+            'kemerovo': 'Asia/Novosibirsk',
+            'novokuznetsk': 'Asia/Novosibirsk',
+            'ryazan': 'Europe/Moscow',
+            'astrahan': 'Europe/Moscow',
+            'naberezhnye chelny': 'Europe/Moscow',
+            'penza': 'Europe/Moscow',
+            'lipetsk': 'Europe/Moscow',
+            'kirov': 'Europe/Moscow',
+            'cheboksary': 'Europe/Moscow',
+            'tula': 'Europe/Moscow',
+            'kaliningrad': 'Europe/Kaliningrad',
+            'balashikha': 'Europe/Moscow',
+            'krasnogorsk': 'Europe/Moscow',
+            'podolsk': 'Europe/Moscow',
+            'khimki': 'Europe/Moscow',
+            'elektrostal': 'Europe/Moscow',
+            'odintsovo': 'Europe/Moscow',
+            'korolyov': 'Europe/Moscow',
+            'lyubertsy': 'Europe/Moscow',
+            'domodedovo': 'Europe/Moscow',
+            'reutov': 'Europe/Moscow',
+            'zelenograd': 'Europe/Moscow',
+            'ramenskoye': 'Europe/Moscow',
+            'pushkino': 'Europe/Moscow',
+            'dolgoprudny': 'Europe/Moscow',
+            'klimovsk': 'Europe/Moscow',
+            'vidnoye': 'Europe/Moscow',
+            'troitsk': 'Europe/Moscow',
+            'lobnya': 'Europe/Moscow',
+            'dzerzhinsky': 'Europe/Moscow',
+            'krasnoznamensk': 'Europe/Moscow',
+            'kotelniki': 'Europe/Moscow',
+            'lytkarino': 'Europe/Moscow',
+            'butovo': 'Europe/Moscow',
+            'shcherbinka': 'Europe/Moscow'
+        };
+        
+        // Check if the message contains a timezone
+        for (const [location, timezone] of Object.entries(timezoneMap)) {
+            if (lowerMessage.includes(location)) {
+                try {
+                    const now = new Date();
+                    const timeInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+                    
+                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    const dayOfWeek = days[timeInTimezone.getDay()];
+                    const month = months[timeInTimezone.getMonth()];
+                    const date = timeInTimezone.getDate();
+                    const year = timeInTimezone.getFullYear();
+                    
+                    // Add ordinal suffix to date
+                    const getOrdinalSuffix = (day) => {
+                        if (day >= 11 && day <= 13) return 'th';
+                        switch (day % 10) {
+                            case 1: return 'st';
+                            case 2: return 'nd';
+                            case 3: return 'rd';
+                            default: return 'th';
+                        }
+                    };
+                    
+                    const ordinalDate = date + getOrdinalSuffix(date);
+                    
+                    // Get timezone offset for display
+                    const localTime = new Date();
+                    const timezoneTime = new Date(localTime.toLocaleString('en-US', { timeZone: timezone }));
+                    const offsetHours = Math.round((timezoneTime.getTime() - localTime.getTime()) / (1000 * 60 * 60));
+                    
+                    let offsetText = '';
+                    if (offsetHours > 0) {
+                        offsetText = ` (${offsetHours} hours ahead)`;
+                    } else if (offsetHours < 0) {
+                        offsetText = ` (${Math.abs(offsetHours)} hours behind)`;
+                    } else {
+                        offsetText = ' (same time)';
+                    }
+                    
+                    if (lowerMessage.includes('day') && !lowerMessage.includes('date')) {
+                        // User is asking about the day of the week in that timezone
+                        return `Today is ${dayOfWeek} in ${location.charAt(0).toUpperCase() + location.slice(1)}${offsetText}.`;
+                    } else {
+                        // User is asking about the full date in that timezone
+                        return `Today is ${dayOfWeek}, ${month} ${ordinalDate}, ${year} in ${location.charAt(0).toUpperCase() + location.slice(1)}${offsetText}.`;
+                    }
+                } catch (error) {
+                    return `I'm sorry, I couldn't get the date for ${location}. Please try a different location.`;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    handleCombinedDateTimeQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check for timezone-specific combined queries
+        const timezoneResult = this.handleTimezoneCombinedQuery(message);
+        if (timezoneResult) {
+            return timezoneResult;
+        }
+        
+        // Get current date and time information
+        const now = new Date();
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayOfWeek = days[now.getDay()];
+        const month = months[now.getMonth()];
+        const date = now.getDate();
+        const year = now.getFullYear();
+        
+        // Get time information
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const displayMinutes = minutes.toString().padStart(2, '0');
+        
+        // Add ordinal suffix to date
+        const getOrdinalSuffix = (day) => {
+            if (day >= 11 && day <= 13) return 'th';
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        };
+        
+        const ordinalDate = date + getOrdinalSuffix(date);
+        
+        // Create combined response
+        return `Today is ${dayOfWeek}, ${month} ${ordinalDate}, ${year} and the current time is ${displayHours}:${displayMinutes} ${ampm}.`;
+    }
+    
+    handleTimezoneCombinedQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Check if the message contains both combined keywords and location keywords
+        const combinedKeywords = ['day and time', 'time and day', 'date and time', 'time and date', 'day time', 'time day', 'date time', 'time date'];
+        const hasCombinedKeyword = combinedKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (!hasCombinedKeyword) {
+            return null;
+        }
+        
+        // Common timezone mappings (same as in handleTimezoneQuery)
+        const timezoneMap = {
+            'japan': 'Asia/Tokyo',
+            'tokyo': 'Asia/Tokyo',
+            'berlin': 'Europe/Berlin',
+            'germany': 'Europe/Berlin',
+            'london': 'Europe/London',
+            'uk': 'Europe/London',
+            'england': 'Europe/London',
+            'new york': 'America/New_York',
+            'nyc': 'America/New_York',
+            'los angeles': 'America/Los_Angeles',
+            'la': 'America/Los_Angeles',
+            'california': 'America/Los_Angeles',
+            'paris': 'Europe/Paris',
+            'france': 'Europe/Paris',
+            'rome': 'Europe/Rome',
+            'italy': 'Europe/Rome',
+            'madrid': 'Europe/Madrid',
+            'spain': 'Europe/Madrid',
+            'moscow': 'Europe/Moscow',
+            'russia': 'Europe/Moscow',
+            'beijing': 'Asia/Shanghai',
+            'china': 'Asia/Shanghai',
+            'seoul': 'Asia/Seoul',
+            'korea': 'Asia/Seoul',
+            'sydney': 'Australia/Sydney',
+            'australia': 'Australia/Sydney',
+            'mumbai': 'Asia/Kolkata',
+            'india': 'Asia/Kolkata',
+            'delhi': 'Asia/Kolkata',
+            'dubai': 'Asia/Dubai',
+            'uae': 'Asia/Dubai',
+            'singapore': 'Asia/Singapore',
+            'bangkok': 'Asia/Bangkok',
+            'thailand': 'Asia/Bangkok',
+            'jakarta': 'Asia/Jakarta',
+            'indonesia': 'Asia/Jakarta',
+            'manila': 'Asia/Manila',
+            'philippines': 'Asia/Manila',
+            'hanoi': 'Asia/Ho_Chi_Minh',
+            'vietnam': 'Asia/Ho_Chi_Minh',
+            'kuala lumpur': 'Asia/Kuala_Lumpur',
+            'malaysia': 'Asia/Kuala_Lumpur',
+            'cyberjaya': 'Asia/Kuala_Lumpur',
+            'putrajaya': 'Asia/Kuala_Lumpur',
+            'shah alam': 'Asia/Kuala_Lumpur',
+            'petaling jaya': 'Asia/Kuala_Lumpur',
+            'subang jaya': 'Asia/Kuala_Lumpur',
+            'klang': 'Asia/Kuala_Lumpur',
+            'george town': 'Asia/Kuala_Lumpur',
+            'penang': 'Asia/Kuala_Lumpur',
+            'ipoh': 'Asia/Kuala_Lumpur',
+            'johor bahru': 'Asia/Kuala_Lumpur',
+            'johor': 'Asia/Kuala_Lumpur',
+            'alor setar': 'Asia/Kuala_Lumpur',
+            'kota kinabalu': 'Asia/Kuala_Lumpur',
+            'kuching': 'Asia/Kuala_Lumpur',
+            'miri': 'Asia/Kuala_Lumpur',
+            'sibu': 'Asia/Kuala_Lumpur',
+            'sandakan': 'Asia/Kuala_Lumpur',
+            'taiping': 'Asia/Kuala_Lumpur',
+            'seremban': 'Asia/Kuala_Lumpur',
+            'nilai': 'Asia/Kuala_Lumpur',
+            'port dickson': 'Asia/Kuala_Lumpur',
+            'malacca city': 'Asia/Kuala_Lumpur',
+            'dhaka': 'Asia/Dhaka',
+            'bangladesh': 'Asia/Dhaka',
+            'tangail': 'Asia/Dhaka',
+            'tangail city': 'Asia/Dhaka',
+            'chittagong': 'Asia/Dhaka',
+            'sylhet': 'Asia/Dhaka',
+            'rajshahi': 'Asia/Dhaka',
+            'khulna': 'Asia/Dhaka',
+            'barisal': 'Asia/Dhaka',
+            'rangpur': 'Asia/Dhaka',
+            'mymensingh': 'Asia/Dhaka',
+            'comilla': 'Asia/Dhaka',
+            'jessore': 'Asia/Dhaka',
+            'bogra': 'Asia/Dhaka',
+            'dinajpur': 'Asia/Dhaka',
+            'pabna': 'Asia/Dhaka',
+            'kustia': 'Asia/Dhaka',
+            'faridpur': 'Asia/Dhaka',
+            'gopalganj': 'Asia/Dhaka',
+            'madaripur': 'Asia/Dhaka',
+            'shariatpur': 'Asia/Dhaka',
+            'rajbari': 'Asia/Dhaka',
+            'magura': 'Asia/Dhaka',
+            'jhenaidah': 'Asia/Dhaka',
+            'narail': 'Asia/Dhaka',
+            'satkhira': 'Asia/Dhaka',
+            'bagerhat': 'Asia/Dhaka',
+            'pirojpur': 'Asia/Dhaka',
+            'barguna': 'Asia/Dhaka',
+            'patuakhali': 'Asia/Dhaka',
+            'bhola': 'Asia/Dhaka',
+            'lakshmipur': 'Asia/Dhaka',
+            'noakhali': 'Asia/Dhaka',
+            'feni': 'Asia/Dhaka',
+            'chandpur': 'Asia/Dhaka',
+            'cox\'s bazar': 'Asia/Dhaka',
+            'coxs bazar': 'Asia/Dhaka',
+            'bandarban': 'Asia/Dhaka',
+            'rangamati': 'Asia/Dhaka',
+            'khagrachari': 'Asia/Dhaka',
+            'kolkata': 'Asia/Kolkata',
+            'calcutta': 'Asia/Kolkata',
+            'chennai': 'Asia/Kolkata',
+            'madras': 'Asia/Kolkata',
+            'hyderabad': 'Asia/Kolkata',
+            'bangalore': 'Asia/Kolkata',
+            'bengaluru': 'Asia/Kolkata',
+            'pune': 'Asia/Kolkata',
+            'ahmedabad': 'Asia/Kolkata',
+            'surat': 'Asia/Kolkata',
+            'jaipur': 'Asia/Kolkata',
+            'lucknow': 'Asia/Kolkata',
+            'kanpur': 'Asia/Kolkata',
+            'nagpur': 'Asia/Kolkata',
+            'indore': 'Asia/Kolkata',
+            'thane': 'Asia/Kolkata',
+            'bhopal': 'Asia/Kolkata',
+            'visakhapatnam': 'Asia/Kolkata',
+            'patna': 'Asia/Kolkata',
+            'vadodara': 'Asia/Kolkata',
+            'ghaziabad': 'Asia/Kolkata',
+            'ludhiana': 'Asia/Kolkata',
+            'agra': 'Asia/Kolkata',
+            'nashik': 'Asia/Kolkata',
+            'ranchi': 'Asia/Kolkata',
+            'howrah': 'Asia/Kolkata',
+            'coimbatore': 'Asia/Kolkata',
+            'raipur': 'Asia/Kolkata',
+            'jabalpur': 'Asia/Kolkata',
+            'gwalior': 'Asia/Kolkata',
+            'vijayawada': 'Asia/Kolkata',
+            'jodhpur': 'Asia/Kolkata',
+            'madurai': 'Asia/Kolkata',
+            'guwahati': 'Asia/Kolkata',
+            'chandigarh': 'Asia/Kolkata',
+            'amritsar': 'Asia/Kolkata',
+            'allahabad': 'Asia/Kolkata',
+            'rohtak': 'Asia/Kolkata',
+            'mysore': 'Asia/Kolkata',
+            'aurangabad': 'Asia/Kolkata',
+            'solapur': 'Asia/Kolkata',
+            'bhubaneswar': 'Asia/Kolkata',
+            'jamshedpur': 'Asia/Kolkata',
+            'bhubaneshwar': 'Asia/Kolkata',
+            'varanasi': 'Asia/Kolkata',
+            'srinagar': 'Asia/Kolkata',
+            'salem': 'Asia/Kolkata',
+            'warangal': 'Asia/Kolkata',
+            'dhanbad': 'Asia/Kolkata',
+            'guntur': 'Asia/Kolkata',
+            'amravati': 'Asia/Kolkata',
+            'noida': 'Asia/Kolkata',
+            'bhiwandi': 'Asia/Kolkata',
+            'bhavnagar': 'Asia/Kolkata',
+            'tiruchirappalli': 'Asia/Kolkata',
+            'kota': 'Asia/Kolkata',
+            'ajmer': 'Asia/Kolkata',
+            'calgary': 'America/Edmonton',
+            'edmonton': 'America/Edmonton',
+            'ottawa': 'America/Toronto',
+            'winnipeg': 'America/Winnipeg',
+            'halifax': 'America/Halifax',
+            'st johns': 'America/St_Johns',
+            'newfoundland': 'America/St_Johns',
+            'victoria': 'America/Vancouver',
+            'saskatoon': 'America/Regina',
+            'regina': 'America/Regina',
+            'quebec': 'America/Toronto',
+            'quebec city': 'America/Toronto',
+            'hamilton': 'America/Toronto',
+            'kitchener': 'America/Toronto',
+            'waterloo': 'America/Toronto',
+            'london ontario': 'America/Toronto',
+            'windsor': 'America/Toronto',
+            'kingston': 'America/Toronto',
+            'sudbury': 'America/Toronto',
+            'thunder bay': 'America/Toronto',
+            'saint john': 'America/Halifax',
+            'fredericton': 'America/Halifax',
+            'charlottetown': 'America/Halifax',
+            'whitehorse': 'America/Whitehorse',
+            'yellowknife': 'America/Yellowknife',
+            'iqaluit': 'America/Iqaluit',
+            'nunavut': 'America/Iqaluit',
+            'yukon': 'America/Whitehorse',
+            'northwest territories': 'America/Yellowknife',
+            'dallas': 'America/Chicago',
+            'fort worth': 'America/Chicago',
+            'austin': 'America/Chicago',
+            'san antonio': 'America/Chicago',
+            'el paso': 'America/Denver',
+            'arlington': 'America/Chicago',
+            'corpus christi': 'America/Chicago',
+            'plano': 'America/Chicago',
+            'laredo': 'America/Chicago',
+            'lubbock': 'America/Chicago',
+            'garland': 'America/Chicago',
+            'irving': 'America/Chicago',
+            'amarillo': 'America/Chicago',
+            'grand prairie': 'America/Chicago',
+            'brownsville': 'America/Chicago',
+            'pasadena': 'America/Chicago',
+            'mckinney': 'America/Chicago',
+            'mesa': 'America/Phoenix',
+            'tucson': 'America/Phoenix',
+            'chandler': 'America/Phoenix',
+            'scottsdale': 'America/Phoenix',
+            'glendale': 'America/Phoenix',
+            'gilbert': 'America/Phoenix',
+            'tempe': 'America/Phoenix',
+            'peoria': 'America/Phoenix',
+            'surprise': 'America/Phoenix',
+            'yuma': 'America/Phoenix',
+            'avondale': 'America/Phoenix',
+            'goodyear': 'America/Phoenix',
+            'flagstaff': 'America/Phoenix',
+            'buckeye': 'America/Phoenix',
+            'casa grande': 'America/Phoenix',
+            'lake havasu city': 'America/Phoenix',
+            'maricopa': 'America/Phoenix',
+            'oregon': 'America/Los_Angeles',
+            'portland': 'America/Los_Angeles',
+            'salem': 'America/Los_Angeles',
+            'eugene': 'America/Los_Angeles',
+            'gresham': 'America/Los_Angeles',
+            'hillsboro': 'America/Los_Angeles',
+            'beaverton': 'America/Los_Angeles',
+            'bend': 'America/Los_Angeles',
+            'medford': 'America/Los_Angeles',
+            'springfield': 'America/Los_Angeles',
+            'corvallis': 'America/Los_Angeles',
+            'albany': 'America/Los_Angeles',
+            'tigard': 'America/Los_Angeles',
+            'lake oswego': 'America/Los_Angeles',
+            'keizer': 'America/Los_Angeles',
+            'grant\'s pass': 'America/Los_Angeles',
+            'oregon city': 'America/Los_Angeles',
+            'orlando': 'America/New_York',
+            'tampa': 'America/New_York',
+            'jacksonville': 'America/New_York',
+            'fort lauderdale': 'America/New_York',
+            'tallahassee': 'America/New_York',
+            'gainesville': 'America/New_York',
+            'daytona beach': 'America/New_York',
+            'clearwater': 'America/New_York',
+            'coral springs': 'America/New_York',
+            'cape coral': 'America/New_York',
+            'port st lucie': 'America/New_York',
+            'sarasota': 'America/New_York',
+            'palm bay': 'America/New_York',
+            'pompano beach': 'America/New_York',
+            'hollywood': 'America/New_York',
+            'lakeland': 'America/New_York',
+            'bradenton': 'America/New_York',
+            'fort myers': 'America/New_York',
+            'kissimmee': 'America/New_York',
+            'boynton beach': 'America/New_York',
+            'delray beach': 'America/New_York',
+            'boca raton': 'America/New_York',
+            'west palm beach': 'America/New_York',
+            'palm beach': 'America/New_York',
+            'naples': 'America/New_York',
+            'melbourne': 'America/New_York',
+            'daytona': 'America/New_York',
+            'spokane': 'America/Los_Angeles',
+            'tacoma': 'America/Los_Angeles',
+            'vancouver wa': 'America/Los_Angeles',
+            'bellevue': 'America/Los_Angeles',
+            'kent': 'America/Los_Angeles',
+            'everett': 'America/Los_Angeles',
+            'renton': 'America/Los_Angeles',
+            'yakima': 'America/Los_Angeles',
+            'spokane valley': 'America/Los_Angeles',
+            'federal way': 'America/Los_Angeles',
+            'bellingham': 'America/Los_Angeles',
+            'kennewick': 'America/Los_Angeles',
+            'auburn': 'America/Los_Angeles',
+            'pasco': 'America/Los_Angeles',
+            'marysville': 'America/Los_Angeles',
+            'lakewood': 'America/Los_Angeles',
+            'redmond': 'America/Los_Angeles',
+            'shoreline': 'America/Los_Angeles',
+            'richland': 'America/Los_Angeles',
+            'olympia': 'America/Los_Angeles',
+            'lynnwood': 'America/Los_Angeles',
+            'bremerton': 'America/Los_Angeles',
+            'puyallup': 'America/Los_Angeles',
+            'colorado springs': 'America/Denver',
+            'aurora': 'America/Denver',
+            'fort collins': 'America/Denver',
+            'lakewood': 'America/Denver',
+            'thornton': 'America/Denver',
+            'arvada': 'America/Denver',
+            'westminster': 'America/Denver',
+            'pueblo': 'America/Denver',
+            'boulder': 'America/Denver',
+            'greeley': 'America/Denver',
+            'longmont': 'America/Denver',
+            'grand junction': 'America/Denver',
+            'loveland': 'America/Denver',
+            'broomfield': 'America/Denver',
+            'castle rock': 'America/Denver',
+            'commerce city': 'America/Denver',
+            'parker': 'America/Denver',
+            'littleton': 'America/Denver',
+            'northglenn': 'America/Denver',
+            'wheat ridge': 'America/Denver',
+            'englewood': 'America/Denver',
+            'centennial': 'America/Denver',
+            'highlands ranch': 'America/Denver',
+            'fairbanks': 'America/Anchorage',
+            'juneau': 'America/Anchorage',
+            'sitka': 'America/Anchorage',
+            'ketchikan': 'America/Anchorage',
+            'kenai': 'America/Anchorage',
+            'kodiak': 'America/Anchorage',
+            'bethel': 'America/Anchorage',
+            'palmer': 'America/Anchorage',
+            'wasilla': 'America/Anchorage',
+            'hilo': 'Pacific/Honolulu',
+            'kailua': 'Pacific/Honolulu',
+            'kapolei': 'Pacific/Honolulu',
+            'ewa beach': 'Pacific/Honolulu',
+            'mililani town': 'Pacific/Honolulu',
+            'kihei': 'Pacific/Honolulu',
+            'maui': 'Pacific/Honolulu',
+            'kailua kona': 'Pacific/Honolulu',
+            'kaneohe': 'Pacific/Honolulu',
+            'ewa': 'Pacific/Honolulu',
+            'mililani': 'Pacific/Honolulu',
+            'kahului': 'Pacific/Honolulu',
+            'lahaina': 'Pacific/Honolulu',
+            'waipahu': 'Pacific/Honolulu',
+            'pearl city': 'Pacific/Honolulu',
+            'waimalu': 'Pacific/Honolulu',
+            'nanakuli': 'Pacific/Honolulu',
+            'wahiawa': 'Pacific/Honolulu',
+            'schofield barracks': 'Pacific/Honolulu',
+            'wailuku': 'Pacific/Honolulu',
+            'waianae': 'Pacific/Honolulu',
+            'makakilo city': 'Pacific/Honolulu',
+            'lyon': 'Europe/Paris',
+            'marseille': 'Europe/Paris',
+            'toulouse': 'Europe/Paris',
+            'nice': 'Europe/Paris',
+            'nantes': 'Europe/Paris',
+            'strasbourg': 'Europe/Paris',
+            'montpellier': 'Europe/Paris',
+            'bordeaux': 'Europe/Paris',
+            'lille': 'Europe/Paris',
+            'rennes': 'Europe/Paris',
+            'reims': 'Europe/Paris',
+            'saint-etienne': 'Europe/Paris',
+            'toulon': 'Europe/Paris',
+            'le havre': 'Europe/Paris',
+            'grenoble': 'Europe/Paris',
+            'dijon': 'Europe/Paris',
+            'angers': 'Europe/Paris',
+            'saint-denis': 'Europe/Paris',
+            'villeurbanne': 'Europe/Paris',
+            'le mans': 'Europe/Paris',
+            'aix-en-provence': 'Europe/Paris',
+            'brest': 'Europe/Paris',
+            'nimes': 'Europe/Paris',
+            'tours': 'Europe/Paris',
+            'limoges': 'Europe/Paris',
+            'clermont-ferrand': 'Europe/Paris',
+            'milan': 'Europe/Rome',
+            'naples': 'Europe/Rome',
+            'turin': 'Europe/Rome',
+            'palermo': 'Europe/Rome',
+            'genoa': 'Europe/Rome',
+            'bologna': 'Europe/Rome',
+            'florence': 'Europe/Rome',
+            'bari': 'Europe/Rome',
+            'catania': 'Europe/Rome',
+            'venice': 'Europe/Rome',
+            'verona': 'Europe/Rome',
+            'messina': 'Europe/Rome',
+            'padova': 'Europe/Rome',
+            'trieste': 'Europe/Rome',
+            'taranto': 'Europe/Rome',
+            'brescia': 'Europe/Rome',
+            'parma': 'Europe/Rome',
+            'modena': 'Europe/Rome',
+            'reggio calabria': 'Europe/Rome',
+            'reggio emilia': 'Europe/Rome',
+            'perugia': 'Europe/Rome',
+            'livorno': 'Europe/Rome',
+            'ravenna': 'Europe/Rome',
+            'cagliari': 'Europe/Rome',
+            'rimini': 'Europe/Rome',
+            'salerno': 'Europe/Rome',
+            'ferrara': 'Europe/Rome',
+            'sassari': 'Europe/Rome',
+            'syracuse': 'Europe/Rome',
+            'pescara': 'Europe/Rome',
+            'bergamo': 'Europe/Rome',
+            'vicenza': 'Europe/Rome',
+            'trento': 'Europe/Rome',
+            'forli': 'Europe/Rome',
+            'novara': 'Europe/Rome',
+            'piacenza': 'Europe/Rome',
+            'bolzano': 'Europe/Rome',
+            'udine': 'Europe/Rome',
+            'arezzo': 'Europe/Rome',
+            'lecce': 'Europe/Rome',
+            'barcelona': 'Europe/Madrid',
+            'valencia': 'Europe/Madrid',
+            'sevilla': 'Europe/Madrid',
+            'seville': 'Europe/Madrid',
+            'zaragoza': 'Europe/Madrid',
+            'malaga': 'Europe/Madrid',
+            'murcia': 'Europe/Madrid',
+            'palma': 'Europe/Madrid',
+            'las palmas': 'Europe/Madrid',
+            'bilbao': 'Europe/Madrid',
+            'alicante': 'Europe/Madrid',
+            'cordoba': 'Europe/Madrid',
+            'valladolid': 'Europe/Madrid',
+            'vigo': 'Europe/Madrid',
+            'gijon': 'Europe/Madrid',
+            'hospitalet': 'Europe/Madrid',
+            'la coruna': 'Europe/Madrid',
+            'vitoria': 'Europe/Madrid',
+            'granada': 'Europe/Madrid',
+            'elche': 'Europe/Madrid',
+            'tarrasa': 'Europe/Madrid',
+            'badalona': 'Europe/Madrid',
+            'cartagena': 'Europe/Madrid',
+            'jerez': 'Europe/Madrid',
+            'sabadell': 'Europe/Madrid',
+            'mostoles': 'Europe/Madrid',
+            'alcala de henares': 'Europe/Madrid',
+            'pamplona': 'Europe/Madrid',
+            'fuenlabrada': 'Europe/Madrid',
+            'almeria': 'Europe/Madrid',
+            'san sebastian': 'Europe/Madrid',
+            'leganes': 'Europe/Madrid',
+            'santander': 'Europe/Madrid',
+            'castellon': 'Europe/Madrid',
+            'burgos': 'Europe/Madrid',
+            'albacete': 'Europe/Madrid',
+            'alcorcon': 'Europe/Madrid',
+            'getafe': 'Europe/Madrid',
+            'salamanca': 'Europe/Madrid',
+            'huelva': 'Europe/Madrid',
+            'marbella': 'Europe/Madrid',
+            'logrono': 'Europe/Madrid',
+            'tarragona': 'Europe/Madrid',
+            'leon': 'Europe/Madrid',
+            'cadiz': 'Europe/Madrid',
+            'laredo': 'Europe/Madrid',
+            'jaen': 'Europe/Madrid',
+            'orensa': 'Europe/Madrid',
+            'gerona': 'Europe/Madrid',
+            'lugo': 'Europe/Madrid',
+            'caceres': 'Europe/Madrid',
+            'toledo': 'Europe/Madrid',
+            'ceuta': 'Europe/Madrid',
+            'girona': 'Europe/Madrid',
+            'saint petersburg': 'Europe/Moscow',
+            'novosibirsk': 'Asia/Novosibirsk',
+            'yekaterinburg': 'Asia/Yekaterinburg',
+            'kazan': 'Europe/Moscow',
+            'nizhny novgorod': 'Europe/Moscow',
+            'chelyabinsk': 'Asia/Yekaterinburg',
+            'samara': 'Europe/Samara',
+            'omsk': 'Asia/Omsk',
+            'rostov': 'Europe/Moscow',
+            'ufa': 'Asia/Yekaterinburg',
+            'krasnoyarsk': 'Asia/Krasnoyarsk',
+            'perm': 'Asia/Yekaterinburg',
+            'voronezh': 'Europe/Moscow',
+            'volgograd': 'Europe/Moscow',
+            'krasnodar': 'Europe/Moscow',
+            'saratov': 'Europe/Samara',
+            'tyumen': 'Asia/Yekaterinburg',
+            'tolyatti': 'Europe/Moscow',
+            'izhevsk': 'Asia/Yekaterinburg',
+            'barnaul': 'Asia/Novosibirsk',
+            'ulyanovsk': 'Europe/Moscow',
+            'irkutsk': 'Asia/Irkutsk',
+            'khabarovsk': 'Asia/Vladivostok',
+            'yaroslavl': 'Europe/Moscow',
+            'vladivostok': 'Asia/Vladivostok',
+            'makhachkala': 'Europe/Moscow',
+            'tomsk': 'Asia/Novosibirsk',
+            'orenburg': 'Asia/Yekaterinburg',
+            'kemerovo': 'Asia/Novosibirsk',
+            'novokuznetsk': 'Asia/Novosibirsk',
+            'ryazan': 'Europe/Moscow',
+            'astrahan': 'Europe/Moscow',
+            'naberezhnye chelny': 'Europe/Moscow',
+            'penza': 'Europe/Moscow',
+            'lipetsk': 'Europe/Moscow',
+            'kirov': 'Europe/Moscow',
+            'cheboksary': 'Europe/Moscow',
+            'tula': 'Europe/Moscow',
+            'kaliningrad': 'Europe/Kaliningrad',
+            'balashikha': 'Europe/Moscow',
+            'krasnogorsk': 'Europe/Moscow',
+            'podolsk': 'Europe/Moscow',
+            'khimki': 'Europe/Moscow',
+            'elektrostal': 'Europe/Moscow',
+            'odintsovo': 'Europe/Moscow',
+            'korolyov': 'Europe/Moscow',
+            'lyubertsy': 'Europe/Moscow',
+            'domodedovo': 'Europe/Moscow',
+            'reutov': 'Europe/Moscow',
+            'zelenograd': 'Europe/Moscow',
+            'ramenskoye': 'Europe/Moscow',
+            'pushkino': 'Europe/Moscow',
+            'dolgoprudny': 'Europe/Moscow',
+            'klimovsk': 'Europe/Moscow',
+            'vidnoye': 'Europe/Moscow',
+            'troitsk': 'Europe/Moscow',
+            'lobnya': 'Europe/Moscow',
+            'dzerzhinsky': 'Europe/Moscow',
+            'krasnoznamensk': 'Europe/Moscow',
+            'kotelniki': 'Europe/Moscow',
+            'lytkarino': 'Europe/Moscow',
+            'butovo': 'Europe/Moscow',
+            'shcherbinka': 'Europe/Moscow'
+        };
+        
+        // Check if the message contains a timezone
+        for (const [location, timezone] of Object.entries(timezoneMap)) {
+            if (lowerMessage.includes(location)) {
+                try {
+                    const now = new Date();
+                    const timeInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+                    
+                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    const dayOfWeek = days[timeInTimezone.getDay()];
+                    const month = months[timeInTimezone.getMonth()];
+                    const date = timeInTimezone.getDate();
+                    const year = timeInTimezone.getFullYear();
+                    
+                    // Get time information in that timezone
+                    const hours = timeInTimezone.getHours();
+                    const minutes = timeInTimezone.getMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const displayHours = hours % 12 || 12;
+                    const displayMinutes = minutes.toString().padStart(2, '0');
+                    
+                    // Add ordinal suffix to date
+                    const getOrdinalSuffix = (day) => {
+                        if (day >= 11 && day <= 13) return 'th';
+                        switch (day % 10) {
+                            case 1: return 'st';
+                            case 2: return 'nd';
+                            case 3: return 'rd';
+                            default: return 'th';
+                        }
+                    };
+                    
+                    const ordinalDate = date + getOrdinalSuffix(date);
+                    
+                    // Get timezone offset for display
+                    const localTime = new Date();
+                    const timezoneTime = new Date(localTime.toLocaleString('en-US', { timeZone: timezone }));
+                    const offsetHours = Math.round((timezoneTime.getTime() - localTime.getTime()) / (1000 * 60 * 60));
+                    
+                    let offsetText = '';
+                    if (offsetHours > 0) {
+                        offsetText = ` (${offsetHours} hours ahead)`;
+                    } else if (offsetHours < 0) {
+                        offsetText = ` (${Math.abs(offsetHours)} hours behind)`;
+                    } else {
+                        offsetText = ' (same time)';
+                    }
+                    
+                    return `Today is ${dayOfWeek}, ${month} ${ordinalDate}, ${year} and the current time is ${displayHours}:${displayMinutes} ${ampm} in ${location.charAt(0).toUpperCase() + location.slice(1)}${offsetText}.`;
+                } catch (error) {
+                    return `I'm sorry, I couldn't get the date and time for ${location}. Please try a different location.`;
+                }
+            }
+        }
+        
+        return null;
     }
     
     scrollToBottom() {
