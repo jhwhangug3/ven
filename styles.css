@@ -612,7 +612,7 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
 
 /* User Menu Popup */
 .user-menu {
-    position: absolute;
+    position: fixed;
     bottom: 70px;
     left: 14px;
     right: 14px;
@@ -620,7 +620,7 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     border: 1px solid #2a2a2a;
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-    z-index: 3000;
+    z-index: 5000;
     display: none;
     backdrop-filter: blur(10px);
 }
@@ -1138,7 +1138,7 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     
     /* Ensure user menu appears above sidebar footer on smaller screens */
     .user-menu {
-        z-index: 3000;
+        z-index: 5000;
     }
 }
 
@@ -1656,6 +1656,6 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     
     /* Ensure user menu appears above sidebar footer on mobile */
     .user-menu {
-        z-index: 3000;
+        z-index: 5000;
     }
 } 
