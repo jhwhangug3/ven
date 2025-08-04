@@ -2182,8 +2182,10 @@ I'm here to help once I understand better what you're looking for! 😊`;
         if (sender === 'user') {
             // Check if user has a profile picture
             if (this.isLoggedIn && this.currentUser && this.currentUser.profileImage) {
+                console.log('Using profile image for user message');
                 avatar.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
             } else {
+                console.log('Using default user icon - no profile image available');
                 avatar.innerHTML = '<i class="fas fa-user"></i>';
             }
         } else {
@@ -5831,14 +5833,39 @@ What specifically would you like to know? I'm here to help! 🤝`
     handleEditProfileImageUpload(event) {
         const file = event.target.files[0];
         if (file) {
+            // Check file size (limit to 5MB for mobile compatibility)
+            if (file.size > 5 * 1024 * 1024) {
+                this.addMessage("Image file is too large. Please choose an image smaller than 5MB.", 'bot');
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                this.addMessage("Please select a valid image file.", 'bot');
+                return;
+            }
+            
             const reader = new FileReader();
+            
             reader.onload = (e) => {
-                const editProfilePreview = document.getElementById('editProfilePreview');
-                if (editProfilePreview) {
-                    editProfilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile">`;
+                try {
+                    const editProfilePreview = document.getElementById('editProfilePreview');
+                    if (editProfilePreview) {
+                        editProfilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile" style="max-width: 100%; height: auto;">`;
+                    }
+                    this.editProfileImageData = e.target.result;
+                    console.log('Edit profile image loaded successfully');
+                } catch (error) {
+                    console.error('Error loading edit profile image:', error);
+                    this.addMessage("Error loading image. Please try again.", 'bot');
                 }
-                this.editProfileImageData = e.target.result;
             };
+            
+            reader.onerror = () => {
+                console.error('FileReader error in edit profile');
+                this.addMessage("Error reading image file. Please try again.", 'bot');
+            };
+            
             reader.readAsDataURL(file);
         }
     }
@@ -5867,6 +5894,7 @@ What specifically would you like to know? I'm here to help! 🤝`
         // Update profile image if changed
         if (this.editProfileImageData) {
             this.currentUser.profileImage = this.editProfileImageData;
+            console.log('Profile image updated:', this.currentUser.profileImage ? 'Image data present' : 'No image data');
         }
         
         // Save updated data
@@ -6258,14 +6286,39 @@ What specifically would you like to know? I'm here to help! 🤝`
     handleProfileImageUpload(event) {
         const file = event.target.files[0];
         if (file) {
+            // Check file size (limit to 5MB for mobile compatibility)
+            if (file.size > 5 * 1024 * 1024) {
+                this.addMessage("Image file is too large. Please choose an image smaller than 5MB.", 'bot');
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                this.addMessage("Please select a valid image file.", 'bot');
+                return;
+            }
+            
             const reader = new FileReader();
+            
             reader.onload = (e) => {
-                const profilePreview = document.getElementById('profilePreview');
-                if (profilePreview) {
-                    profilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile">`;
+                try {
+                    const profilePreview = document.getElementById('profilePreview');
+                    if (profilePreview) {
+                        profilePreview.innerHTML = `<img src="${e.target.result}" alt="Profile" style="max-width: 100%; height: auto;">`;
+                    }
+                    this.profileImageData = e.target.result;
+                    console.log('Profile image loaded successfully');
+                } catch (error) {
+                    console.error('Error loading profile image:', error);
+                    this.addMessage("Error loading image. Please try again.", 'bot');
                 }
-                this.profileImageData = e.target.result;
             };
+            
+            reader.onerror = () => {
+                console.error('FileReader error');
+                this.addMessage("Error reading image file. Please try again.", 'bot');
+            };
+            
             reader.readAsDataURL(file);
         }
     }
@@ -6464,6 +6517,14 @@ What specifically would you like to know? I'm here to help! 🤝`
             if (!this.userMemory.name) {
                 this.userMemory.name = this.currentUser.name;
             }
+            
+            // Debug: Log current user state
+            console.log('Current user state:', {
+                isLoggedIn: this.isLoggedIn,
+                userName: this.currentUser.name,
+                hasProfileImage: !!this.currentUser.profileImage,
+                profileImageLength: this.currentUser.profileImage ? this.currentUser.profileImage.length : 0
+            });
             
             // Update any existing user references in the chat
             const userMessages = document.querySelectorAll('.message.user .message-content');
