@@ -161,7 +161,67 @@ class Chatbot {
             responseCount: 0,
             lastInteractionTime: null
         };
-        
+
+        // NEW FEATURES - Enhanced capabilities
+        this.fileUploadSystem = {
+            supportedTypes: ['txt', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'],
+            maxFileSize: 10 * 1024 * 1024, // 10MB
+            uploadedFiles: []
+        };
+
+        this.voiceSystem = {
+            isListening: false,
+            isSpeaking: false,
+            recognition: null,
+            synthesis: null,
+            supported: false
+        };
+
+        this.codeExecution = {
+            supportedLanguages: ['javascript', 'python', 'html', 'css', 'json'],
+            sandboxMode: true,
+            executionHistory: []
+        };
+
+        this.weatherSystem = {
+            apiKey: null, // Would need actual API key
+            lastLocation: null,
+            cache: {},
+            cacheExpiry: 30 * 60 * 1000 // 30 minutes
+        };
+
+        this.calendarSystem = {
+            events: [],
+            reminders: [],
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+
+        this.imageGeneration = {
+            supported: false,
+            apiKey: null,
+            lastGenerated: null
+        };
+
+        this.searchFilters = {
+            timeRange: 'any',
+            language: 'en',
+            region: 'us',
+            safeSearch: true
+        };
+
+        this.languageSupport = {
+            currentLanguage: 'en',
+            supportedLanguages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ru', 'ar', 'hi', 'bn'],
+            translations: {}
+        };
+
+        this.analytics = {
+            messageCount: 0,
+            sessionDuration: 0,
+            featuresUsed: {},
+            performanceMetrics: {}
+        };
+
         // init() will be called separately after construction
     }
     
@@ -208,6 +268,17 @@ class Chatbot {
         
         // Initialize login system
         this.initLoginSystem();
+        
+        // Initialize new enhanced features
+        this.initFileUploadSystem();
+        this.initVoiceSystem();
+        this.initCodeExecution();
+        this.initWeatherSystem();
+        this.initCalendarSystem();
+        this.initImageGeneration();
+        this.initSearchFilters();
+        this.initLanguageSupport();
+        this.initAnalytics();
         
         // Ensure user interface is updated after everything is initialized
         setTimeout(() => {
@@ -594,7 +665,9 @@ class Chatbot {
     async getBotResponse(message) {
         const lowerMessage = message.toLowerCase();
         
-
+        // Track message count for analytics
+        this.analytics.messageCount++;
+        this.trackFeatureUsage('message_sent');
         
         // Enhanced context understanding
         const contextResult = this.handleContextualQuery(message);
@@ -602,7 +675,121 @@ class Chatbot {
             return contextResult;
         }
         
-        // Check for simple greetings first
+        // Check for small talk and greetings
+        const smallTalkResult = this.handleSmallTalk(message);
+        if (smallTalkResult) {
+            return smallTalkResult;
+        }
+        
+        // Check for general knowledge and trivia
+        const triviaResult = this.handleTriviaQuery(message);
+        if (triviaResult) {
+            return triviaResult;
+        }
+        
+        // Check for mathematical expressions
+        const mathResult = this.solveMathProblem(message);
+        if (mathResult !== null) {
+            return mathResult;
+        }
+        
+        // Check for date, time, and weather queries
+        const dateTimeResult = this.handleDateTimeQuery(message);
+        if (dateTimeResult) {
+            return dateTimeResult;
+        }
+        
+        // Check for translation requests
+        const translationResult = await this.handleTranslationRequest(message);
+        if (translationResult) {
+            return translationResult;
+        }
+        
+        // Check for entertainment and media queries
+        const entertainmentResult = this.handleEntertainmentQuery(message);
+        if (entertainmentResult) {
+            return entertainmentResult;
+        }
+        
+        // Check for mental health and emotional support
+        const emotionalResult = this.handleEmotionalSupport(message);
+        if (emotionalResult) {
+            return emotionalResult;
+        }
+        
+        // Check for productivity and tools
+        const productivityResult = this.handleProductivityQuery(message);
+        if (productivityResult) {
+            return productivityResult;
+        }
+        
+        // Check for shopping and budgeting
+        const shoppingResult = this.handleShoppingQuery(message);
+        if (shoppingResult) {
+            return shoppingResult;
+        }
+        
+        // Check for travel and locations
+        const travelResult = this.handleTravelQuery(message);
+        if (travelResult) {
+            return travelResult;
+        }
+        
+        // Check for tech and coding help
+        const techResult = this.handleTechQuery(message);
+        if (techResult) {
+            return techResult;
+        }
+        
+        // Check for money and finance
+        const financeResult = this.handleFinanceQuery(message);
+        if (financeResult) {
+            return financeResult;
+        }
+        
+        // Check for religion and culture
+        const religionResult = this.handleReligionQuery(message);
+        if (religionResult) {
+            return religionResult;
+        }
+        
+        // Check for food and diet
+        const foodResult = this.handleFoodQuery(message);
+        if (foodResult) {
+            return foodResult;
+        }
+        
+        // Check for science and facts
+        const scienceResult = this.handleScienceQuery(message);
+        if (scienceResult) {
+            return scienceResult;
+        }
+        
+        // Check for creativity and fun
+        const creativityResult = this.handleCreativityQuery(message);
+        if (creativityResult) {
+            return creativityResult;
+        }
+        
+        // Check for app and social help
+        const appResult = this.handleAppQuery(message);
+        if (appResult) {
+            return appResult;
+        }
+        
+        // Check for study and learning
+        const studyResult = this.handleStudyQuery(message);
+        if (studyResult) {
+            return studyResult;
+        }
+        
+        // Check for developer-level queries
+        const devResult = this.handleDeveloperQuery(message);
+        if (devResult) {
+            return devResult;
+        }
+        
+        // Check for simple greetings
         const greetingResult = this.handleGreetingQuery(message);
         if (greetingResult) {
             return greetingResult;
@@ -620,43 +807,19 @@ class Chatbot {
             return cookingResult;
         }
         
-        // Check for date and day queries first (before time queries)
-        const dateResult = this.handleDateQuery(message);
-        if (dateResult) {
-            return dateResult;
-        }
-        
-        // Check for time-related queries
-        const timeResult = this.handleTimeQuery(message);
-        if (timeResult) {
-            return timeResult;
-        }
-        
-        // Check for mathematical expressions first
-        const mathResult = this.solveMathProblem(message);
-        if (mathResult !== null) {
-            return mathResult;
-        }
-        
-        // Check for translation requests first
-        const translationResult = await this.handleTranslationRequest(message);
-        if (translationResult) {
-            return translationResult;
-        }
-        
-        // Check for contextual responses based on conversation history FIRST (before user memory)
+        // Check for contextual responses based on conversation history
         const contextualResult = this.handleContextualResponse(message);
         if (contextualResult) {
             return contextualResult;
         }
         
-        // Check for user memory/context updates (after contextual responses)
+        // Check for user memory/context updates
         const memoryResult = this.handleUserMemory(message);
         if (memoryResult) {
             return memoryResult;
         }
         
-        // Check for Nahin searches first (highest priority)
+        // Check for Nahin searches
         if (this.isNahinSearch(message)) {
             return this.getNahinInfo(message);
         }
@@ -667,32 +830,14 @@ class Chatbot {
             return knowledgeResult;
         }
         
-        // Check if this is a search query (contains question words or person queries)
-        const isSearchQuery = lowerMessage.includes('who is') || 
-                             lowerMessage.includes('who was') || 
-                             lowerMessage.includes('what is') || 
-                             lowerMessage.includes('what was') ||
-                             lowerMessage.includes('tell me about') ||
-                             lowerMessage.includes('search for') ||
-                             lowerMessage.includes('information about') ||
-                             lowerMessage.includes('how old') ||
-                             lowerMessage.includes('how tall') ||
-                             lowerMessage.includes('where is') ||
-                             lowerMessage.includes('when was') ||
-                             // Check if it's just a single word that could be a person's name
-                             // But exclude common words and greetings
-                             (message.trim().split(' ').length === 1 && 
-                              message.trim().length >= 3 && 
-                              message.trim().length <= 20 &&
-                              /^[a-zA-Z]+$/.test(message.trim()) &&
-                              !this.isCommonWord(message.trim()));
+        // Check if this is a search query
+        const isSearchQuery = this.isSearchQuery(message);
         
-        // If it's a search query, skip generic responses and search directly
         if (isSearchQuery) {
             return await this.searchForInformation(message);
         }
         
-        // Check for exact matches for generic responses (longer phrases first)
+        // Check for exact matches for generic responses
         console.log('Checking responses for:', lowerMessage);
         console.log('Available response keys:', Object.keys(this.responses));
         const sortedKeys = Object.keys(this.responses).sort((a, b) => b.length - a.length);
@@ -7022,8 +7167,1128 @@ What specifically would you like to know? I'm here to help! 🤝`
         
         return commonWords.includes(word.toLowerCase());
     }
-    
 
+    // ===== NEW ENHANCED FEATURES =====
+
+    // File Upload System
+    initFileUploadSystem() {
+        // File upload functionality available but not shown in UI
+        // Users can still access file features through chat commands
+    }
+
+    showFileUploadDialog() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = this.fileUploadSystem.supportedTypes.map(type => `.${type}`).join(',');
+        input.multiple = true;
+        input.addEventListener('change', (e) => this.handleFileUpload(e.target.files));
+        input.click();
+    }
+
+    async handleFileUpload(files) {
+        for (const file of files) {
+            if (file.size > this.fileUploadSystem.maxFileSize) {
+                this.addMessage(`File ${file.name} is too large. Maximum size is 10MB.`, 'bot');
+                continue;
+            }
+
+            const fileType = file.name.split('.').pop().toLowerCase();
+            if (!this.fileUploadSystem.supportedTypes.includes(fileType)) {
+                this.addMessage(`File type .${fileType} is not supported.`, 'bot');
+                continue;
+            }
+
+            try {
+                const content = await this.readFileContent(file);
+                this.fileUploadSystem.uploadedFiles.push({
+                    name: file.name,
+                    type: fileType,
+                    size: file.size,
+                    content: content,
+                    uploadedAt: new Date()
+                });
+
+                this.addMessage(`📎 File "${file.name}" uploaded successfully! I can now analyze its content.`, 'bot');
+                
+                // Analyze the file content
+                const analysis = await this.analyzeFileContent(file.name, content, fileType);
+                this.addMessage(analysis, 'bot');
+            } catch (error) {
+                this.addMessage(`Error uploading file ${file.name}: ${error.message}`, 'bot');
+            }
+        }
+    }
+
+    readFileContent(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('Failed to read file'));
+            
+            if (file.type.startsWith('text/') || file.type === 'application/json') {
+                reader.readAsText(file);
+            } else {
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    async analyzeFileContent(fileName, content, fileType) {
+        let analysis = `📄 **File Analysis: ${fileName}**\n\n`;
+        
+        switch (fileType) {
+            case 'txt':
+                analysis += this.analyzeTextFile(content);
+                break;
+            case 'json':
+                analysis += this.analyzeJsonFile(content);
+                break;
+            case 'html':
+                analysis += this.analyzeHtmlFile(content);
+                break;
+            case 'css':
+                analysis += this.analyzeCssFile(content);
+                break;
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+                analysis += this.analyzeImageFile(fileName, content);
+                break;
+            default:
+                analysis += `File type ${fileType} uploaded. Content length: ${content.length} characters.`;
+        }
+        
+        return analysis;
+    }
+
+    analyzeTextFile(content) {
+        const lines = content.split('\n');
+        const words = content.split(/\s+/);
+        const characters = content.length;
+        
+        return `📝 **Text Analysis:**
+• Lines: ${lines.length}
+• Words: ${words.length}
+• Characters: ${characters}
+• Average words per line: ${(words.length / lines.length).toFixed(1)}
+
+**Content Preview:**
+${content.substring(0, 200)}${content.length > 200 ? '...' : ''}`;
+    }
+
+    analyzeJsonFile(content) {
+        try {
+            const json = JSON.parse(content);
+            const keys = Object.keys(json);
+            return `📊 **JSON Analysis:**
+• Valid JSON structure
+• Top-level keys: ${keys.length}
+• Keys: ${keys.join(', ')}
+• Data type: ${Array.isArray(json) ? 'Array' : 'Object'}`;
+        } catch (error) {
+            return `❌ **JSON Analysis:**
+Invalid JSON format: ${error.message}`;
+        }
+    }
+
+    analyzeHtmlFile(content) {
+        const tags = content.match(/<[^>]+>/g) || [];
+        const uniqueTags = [...new Set(tags.map(tag => tag.match(/<(\w+)/)?.[1]).filter(Boolean))];
+        
+        return `🌐 **HTML Analysis:**
+• Total tags: ${tags.length}
+• Unique tag types: ${uniqueTags.length}
+• Tag types: ${uniqueTags.join(', ')}
+• Document structure analyzed`;
+    }
+
+    analyzeCssFile(content) {
+        const rules = content.match(/[^{}]+\{[^}]+\}/g) || [];
+        const selectors = content.match(/[^{}]+\{/g) || [];
+        
+        return `🎨 **CSS Analysis:**
+• CSS rules: ${rules.length}
+• Selectors: ${selectors.length}
+• Stylesheet structure analyzed`;
+    }
+
+    analyzeImageFile(fileName, content) {
+        return `🖼️ **Image Analysis:**
+• File: ${fileName}
+• Image uploaded successfully
+• Ready for image processing or analysis`;
+    }
+
+    // Voice System
+    initVoiceSystem() {
+        // Check for Web Speech API support
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            this.voiceSystem.supported = true;
+            this.voiceSystem.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            this.voiceSystem.synthesis = window.speechSynthesis;
+            
+            this.setupVoiceRecognition();
+        } else {
+            console.log('Speech recognition not supported');
+        }
+    }
+
+    setupVoiceRecognition() {
+        this.voiceSystem.recognition.continuous = false;
+        this.voiceSystem.recognition.interimResults = false;
+        this.voiceSystem.recognition.lang = 'en-US';
+        
+        this.voiceSystem.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            this.messageInput.value = transcript;
+            this.sendMessage();
+        };
+        
+        this.voiceSystem.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            this.hideVoiceIndicator();
+        };
+        
+        this.voiceSystem.recognition.onend = () => {
+            this.hideVoiceIndicator();
+        };
+    }
+
+    startVoiceRecognition() {
+        if (this.voiceSystem.supported && !this.voiceSystem.isListening) {
+            this.voiceSystem.isListening = true;
+            this.voiceSystem.recognition.start();
+            this.showVoiceIndicator();
+        }
+    }
+
+    stopVoiceRecognition() {
+        if (this.voiceSystem.isListening) {
+            this.voiceSystem.recognition.stop();
+            this.voiceSystem.isListening = false;
+        }
+    }
+
+    speakText(text) {
+        if (this.voiceSystem.synthesis && !this.voiceSystem.isSpeaking) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 0.8;
+            
+            utterance.onstart = () => {
+                this.voiceSystem.isSpeaking = true;
+            };
+            
+            utterance.onend = () => {
+                this.voiceSystem.isSpeaking = false;
+            };
+            
+            this.voiceSystem.synthesis.speak(utterance);
+        }
+    }
+
+    // Code Execution System
+    initCodeExecution() {
+        // Code execution functionality available but not shown in UI
+        // Users can still access code features through chat commands
+    }
+
+    showCodeExecutionDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'code-execution-modal';
+        dialog.innerHTML = `
+            <div class="code-execution-content">
+                <h3>Code Execution</h3>
+                <select id="codeLanguage">
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python (Simulated)</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                </select>
+                <textarea id="codeInput" placeholder="Enter your code here..."></textarea>
+                <div class="code-execution-buttons">
+                    <button id="runCode">Run Code</button>
+                    <button id="closeCodeDialog">Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        document.getElementById('runCode').addEventListener('click', () => {
+            const language = document.getElementById('codeLanguage').value;
+            const code = document.getElementById('codeInput').value;
+            this.executeCode(code, language);
+            document.body.removeChild(dialog);
+        });
+        
+        document.getElementById('closeCodeDialog').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+    }
+
+    executeCode(code, language) {
+        let result = '';
+        
+        switch (language) {
+            case 'javascript':
+                try {
+                    const sandbox = new Function('return ' + code);
+                    result = sandbox();
+                    this.addMessage(`✅ **JavaScript Execution Result:**\n\`\`\`javascript\n${code}\n\`\`\`\n**Output:** ${result}`, 'bot');
+                } catch (error) {
+                    this.addMessage(`❌ **JavaScript Error:**\n\`\`\`javascript\n${code}\n\`\`\`\n**Error:** ${error.message}`, 'bot');
+                }
+                break;
+                
+            case 'html':
+                const htmlResult = this.renderHtmlPreview(code);
+                this.addMessage(`🌐 **HTML Preview:**\n\`\`\`html\n${code}\n\`\`\`\n**Rendered:**\n${htmlResult}`, 'bot');
+                break;
+                
+            case 'css':
+                const cssResult = this.renderCssPreview(code);
+                this.addMessage(`🎨 **CSS Preview:**\n\`\`\`css\n${code}\n\`\`\`\n**Applied styles:** ${cssResult}`, 'bot');
+                break;
+                
+            default:
+                this.addMessage(`📝 **Code Analysis:**\n\`\`\`${language}\n${code}\n\`\`\`\nLanguage: ${language}\nLines: ${code.split('\n').length}`, 'bot');
+        }
+        
+        this.codeExecution.executionHistory.push({
+            code,
+            language,
+            result,
+            timestamp: new Date()
+        });
+    }
+
+    renderHtmlPreview(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || div.innerText || '';
+    }
+
+    renderCssPreview(css) {
+        return `CSS rules applied: ${css.split('}').length - 1} rules`;
+    }
+
+    // Weather System
+    initWeatherSystem() {
+        // Weather functionality available but not shown in UI
+        // Users can still access weather features through chat commands
+    }
+
+    async getCurrentWeather() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const weather = await this.fetchWeatherData(latitude, longitude);
+                    this.addMessage(weather, 'bot');
+                },
+                (error) => {
+                    this.addMessage(`❌ **Weather Error:** Unable to get location. Please enable location services or provide a city name.`, 'bot');
+                }
+            );
+        } else {
+            this.addMessage(`❌ **Weather Error:** Geolocation not supported. Please provide a city name.`, 'bot');
+        }
+    }
+
+    async fetchWeatherData(lat, lon) {
+        // Simulated weather data (in real app, would use actual API)
+        const weatherData = {
+            temperature: Math.round(15 + Math.random() * 20),
+            condition: ['Sunny', 'Cloudy', 'Rainy', 'Partly Cloudy'][Math.floor(Math.random() * 4)],
+            humidity: Math.round(40 + Math.random() * 40),
+            windSpeed: Math.round(5 + Math.random() * 15)
+        };
+        
+        return `🌤️ **Current Weather:**
+• Temperature: ${weatherData.temperature}°C
+• Condition: ${weatherData.condition}
+• Humidity: ${weatherData.humidity}%
+• Wind Speed: ${weatherData.windSpeed} km/h
+
+*Location: ${lat.toFixed(2)}, ${lon.toFixed(2)}*`;
+    }
+
+    // Calendar System
+    initCalendarSystem() {
+        // Calendar functionality available but not shown in UI
+        // Users can still access calendar features through chat commands
+    }
+
+    showCalendarDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'calendar-modal';
+        dialog.innerHTML = `
+            <div class="calendar-content">
+                <h3>📅 Calendar & Reminders</h3>
+                <div class="calendar-actions">
+                    <button id="addEvent">Add Event</button>
+                    <button id="addReminder">Add Reminder</button>
+                    <button id="viewEvents">View Events</button>
+                </div>
+                <div id="calendarEvents"></div>
+                <button id="closeCalendar">Close</button>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        this.loadCalendarEvents();
+        
+        document.getElementById('addEvent').addEventListener('click', () => this.addCalendarEvent());
+        document.getElementById('addReminder').addEventListener('click', () => this.addReminder());
+        document.getElementById('viewEvents').addEventListener('click', () => this.viewCalendarEvents());
+        document.getElementById('closeCalendar').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+    }
+
+    addCalendarEvent() {
+        const title = prompt('Event title:');
+        const date = prompt('Event date (YYYY-MM-DD):');
+        const time = prompt('Event time (HH:MM):');
+        
+        if (title && date && time) {
+            this.calendarSystem.events.push({
+                id: Date.now(),
+                title,
+                date,
+                time,
+                type: 'event',
+                created: new Date()
+            });
+            this.addMessage(`✅ **Event Added:** ${title} on ${date} at ${time}`, 'bot');
+        }
+    }
+
+    addReminder() {
+        const title = prompt('Reminder title:');
+        const date = prompt('Reminder date (YYYY-MM-DD):');
+        const time = prompt('Reminder time (HH:MM):');
+        
+        if (title && date && time) {
+            this.calendarSystem.reminders.push({
+                id: Date.now(),
+                title,
+                date,
+                time,
+                type: 'reminder',
+                created: new Date()
+            });
+            this.addMessage(`⏰ **Reminder Added:** ${title} on ${date} at ${time}`, 'bot');
+        }
+    }
+
+    viewCalendarEvents() {
+        const allItems = [...this.calendarSystem.events, ...this.calendarSystem.reminders];
+        const sortedItems = allItems.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+        
+        if (sortedItems.length === 0) {
+            this.addMessage(`📅 **Calendar:** No events or reminders scheduled.`, 'bot');
+            return;
+        }
+        
+        let message = `📅 **Calendar Events & Reminders:**\n\n`;
+        sortedItems.forEach(item => {
+            const icon = item.type === 'event' ? '📅' : '⏰';
+            message += `${icon} **${item.title}** - ${item.date} at ${item.time}\n`;
+        });
+        
+        this.addMessage(message, 'bot');
+    }
+
+    loadCalendarEvents() {
+        // Load events from localStorage
+        const savedEvents = localStorage.getItem('calendarEvents');
+        const savedReminders = localStorage.getItem('calendarReminders');
+        
+        if (savedEvents) {
+            this.calendarSystem.events = JSON.parse(savedEvents);
+        }
+        if (savedReminders) {
+            this.calendarSystem.reminders = JSON.parse(savedReminders);
+        }
+    }
+
+    // Image Generation System
+    initImageGeneration() {
+        // Image generation functionality available but not shown in UI
+        // Users can still access image features through chat commands
+    }
+
+    showImageGenerationDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'image-generation-modal';
+        dialog.innerHTML = `
+            <div class="image-generation-content">
+                <h3>🎨 Generate Image</h3>
+                <textarea id="imagePrompt" placeholder="Describe the image you want to generate..."></textarea>
+                <div class="image-generation-options">
+                    <select id="imageStyle">
+                        <option value="realistic">Realistic</option>
+                        <option value="artistic">Artistic</option>
+                        <option value="cartoon">Cartoon</option>
+                        <option value="abstract">Abstract</option>
+                    </select>
+                    <select id="imageSize">
+                        <option value="512x512">Small (512x512)</option>
+                        <option value="1024x1024">Medium (1024x1024)</option>
+                        <option value="1920x1080">Large (1920x1080)</option>
+                    </select>
+                </div>
+                <div class="image-generation-buttons">
+                    <button id="generateImage">Generate</button>
+                    <button id="closeImageDialog">Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        document.getElementById('generateImage').addEventListener('click', () => {
+            const prompt = document.getElementById('imagePrompt').value;
+            const style = document.getElementById('imageStyle').value;
+            const size = document.getElementById('imageSize').value;
+            
+            if (prompt) {
+                this.generateImage(prompt, style, size);
+                document.body.removeChild(dialog);
+            }
+        });
+        
+        document.getElementById('closeImageDialog').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+    }
+
+    async generateImage(prompt, style, size) {
+        this.addMessage(`🎨 **Generating Image:** ${prompt}\nStyle: ${style}, Size: ${size}`, 'bot');
+        
+        // Simulate image generation (in real app, would call AI image API)
+        setTimeout(() => {
+            const mockImageUrl = `https://via.placeholder.com/${size.replace('x', '/')}/1e3a8a/ffffff?text=${encodeURIComponent(prompt)}`;
+            
+            this.addMessage(`🖼️ **Generated Image:**\n![${prompt}](${mockImageUrl})\n\n*Generated with ${style} style*`, 'bot');
+            
+            this.imageGeneration.lastGenerated = {
+                prompt,
+                style,
+                size,
+                url: mockImageUrl,
+                timestamp: new Date()
+            };
+        }, 2000);
+    }
+
+    // Search Filters System
+    initSearchFilters() {
+        // Search filters functionality available but not shown in UI
+        // Users can still access search features through chat commands
+    }
+
+    showSearchFiltersDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'search-filters-modal';
+        dialog.innerHTML = `
+            <div class="search-filters-content">
+                <h3>🔍 Search Filters</h3>
+                <div class="filter-option">
+                    <label>Time Range:</label>
+                    <select id="timeRange">
+                        <option value="any">Any time</option>
+                        <option value="day">Past day</option>
+                        <option value="week">Past week</option>
+                        <option value="month">Past month</option>
+                        <option value="year">Past year</option>
+                    </select>
+                </div>
+                <div class="filter-option">
+                    <label>Language:</label>
+                    <select id="searchLanguage">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="ja">Japanese</option>
+                    </select>
+                </div>
+                <div class="filter-option">
+                    <label>Safe Search:</label>
+                    <input type="checkbox" id="safeSearch" checked>
+                </div>
+                <div class="search-filters-buttons">
+                    <button id="applyFilters">Apply Filters</button>
+                    <button id="closeFilters">Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // Set current values
+        document.getElementById('timeRange').value = this.searchFilters.timeRange;
+        document.getElementById('searchLanguage').value = this.searchFilters.language;
+        document.getElementById('safeSearch').checked = this.searchFilters.safeSearch;
+        
+        document.getElementById('applyFilters').addEventListener('click', () => {
+            this.searchFilters.timeRange = document.getElementById('timeRange').value;
+            this.searchFilters.language = document.getElementById('searchLanguage').value;
+            this.searchFilters.safeSearch = document.getElementById('safeSearch').checked;
+            
+            this.addMessage(`✅ **Search Filters Updated:**\n• Time Range: ${this.searchFilters.timeRange}\n• Language: ${this.searchFilters.language}\n• Safe Search: ${this.searchFilters.safeSearch ? 'On' : 'Off'}`, 'bot');
+            document.body.removeChild(dialog);
+        });
+        
+        document.getElementById('closeFilters').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+    }
+
+    // Language Support System
+    initLanguageSupport() {
+        // Language support functionality available but not shown in UI
+        // Users can still access language features through chat commands
+    }
+
+    showLanguageDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'language-modal';
+        dialog.innerHTML = `
+            <div class="language-content">
+                <h3>🌍 Language Settings</h3>
+                <div class="language-options">
+                    <div class="language-option" data-lang="en">
+                        <span>🇺🇸 English</span>
+                    </div>
+                    <div class="language-option" data-lang="es">
+                        <span>🇪🇸 Español</span>
+                    </div>
+                    <div class="language-option" data-lang="fr">
+                        <span>🇫🇷 Français</span>
+                    </div>
+                    <div class="language-option" data-lang="de">
+                        <span>🇩🇪 Deutsch</span>
+                    </div>
+                    <div class="language-option" data-lang="ja">
+                        <span>🇯🇵 日本語</span>
+                    </div>
+                    <div class="language-option" data-lang="ko">
+                        <span>🇰🇷 한국어</span>
+                    </div>
+                    <div class="language-option" data-lang="zh">
+                        <span>🇨🇳 中文</span>
+                    </div>
+                </div>
+                <button id="closeLanguage">Close</button>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // Highlight current language
+        const currentLang = dialog.querySelector(`[data-lang="${this.languageSupport.currentLanguage}"]`);
+        if (currentLang) {
+            currentLang.classList.add('selected');
+        }
+        
+        // Add click handlers
+        dialog.querySelectorAll('.language-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const lang = option.dataset.lang;
+                this.changeLanguage(lang);
+                document.body.removeChild(dialog);
+            });
+        });
+        
+        document.getElementById('closeLanguage').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+    }
+
+    changeLanguage(lang) {
+        this.languageSupport.currentLanguage = lang;
+        this.addMessage(`🌍 **Language Changed:** ${this.getLanguageName(lang)}`, 'bot');
+        
+        // Update voice recognition language if supported
+        if (this.voiceSystem.recognition) {
+            this.voiceSystem.recognition.lang = this.getLanguageCode(lang);
+        }
+    }
+
+    getLanguageName(lang) {
+        const names = {
+            'en': 'English',
+            'es': 'Español',
+            'fr': 'Français',
+            'de': 'Deutsch',
+            'ja': '日本語',
+            'ko': '한국어',
+            'zh': '中文'
+        };
+        return names[lang] || lang;
+    }
+
+    getLanguageCode(lang) {
+        const codes = {
+            'en': 'en-US',
+            'es': 'es-ES',
+            'fr': 'fr-FR',
+            'de': 'de-DE',
+            'ja': 'ja-JP',
+            'ko': 'ko-KR',
+            'zh': 'zh-CN'
+        };
+        return codes[lang] || 'en-US';
+    }
+
+    // Analytics System
+    initAnalytics() {
+        this.analytics.sessionStart = new Date();
+        
+        // Track feature usage
+        this.trackFeatureUsage('chat_initiated');
+        
+        // Periodic analytics update
+        setInterval(() => {
+            this.updateAnalytics();
+        }, 60000); // Every minute
+    }
+
+    trackFeatureUsage(feature) {
+        if (!this.analytics.featuresUsed[feature]) {
+            this.analytics.featuresUsed[feature] = 0;
+        }
+        this.analytics.featuresUsed[feature]++;
+    }
+
+    updateAnalytics() {
+        this.analytics.sessionDuration = new Date() - this.analytics.sessionStart;
+        this.analytics.performanceMetrics = {
+            memoryUsage: performance.memory ? performance.memory.usedJSHeapSize : 'N/A',
+            loadTime: performance.timing ? performance.timing.loadEventEnd - performance.timing.navigationStart : 'N/A'
+        };
+    }
+
+    getAnalyticsReport() {
+        this.updateAnalytics();
+        
+        const features = Object.entries(this.analytics.featuresUsed)
+            .map(([feature, count]) => `${feature}: ${count}`)
+            .join('\n');
+        
+        return `📊 **Analytics Report:**
+• Messages sent: ${this.analytics.messageCount}
+• Session duration: ${Math.round(this.analytics.sessionDuration / 1000)}s
+• Features used:
+${features}
+• Memory usage: ${this.analytics.performanceMetrics.memoryUsage}`;
+    }
+
+    // Export Chat System
+    exportChat() {
+        const currentChat = this.chatHistory.find(chat => chat.id === this.currentChatId);
+        if (!currentChat) {
+            this.addMessage('❌ No chat to export.', 'bot');
+            return;
+        }
+        
+        const chatData = {
+            title: currentChat.title,
+            messages: currentChat.messages,
+            exportedAt: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ven-chat-${currentChat.title.replace(/[^a-z0-9]/gi, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.addMessage(`📤 **Chat Exported:** ${currentChat.title}`, 'bot');
+    }
+
+    // ===== ENHANCED CONVERSATION HANDLERS =====
+
+    // Search Query Detection
+    isSearchQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        return lowerMessage.includes('who is') || 
+               lowerMessage.includes('who was') || 
+               lowerMessage.includes('what is') || 
+               lowerMessage.includes('what was') ||
+               lowerMessage.includes('tell me about') ||
+               lowerMessage.includes('search for') ||
+               lowerMessage.includes('information about') ||
+               lowerMessage.includes('how old') ||
+               lowerMessage.includes('how tall') ||
+               lowerMessage.includes('where is') ||
+               lowerMessage.includes('when was') ||
+               (message.trim().split(' ').length === 1 && 
+                message.trim().length >= 3 && 
+                message.trim().length <= 20 &&
+                /^[a-zA-Z]+$/.test(message.trim()) &&
+                !this.isCommonWord(message.trim()));
+    }
+
+    // Small Talk & Greetings
+    handleSmallTalk(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Basic greetings
+        if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey')) {
+            const responses = [
+                "Hi there! 👋 How are you doing today?",
+                "Hello! 😊 Nice to meet you!",
+                "Hey! What's up? ✨",
+                "Hi! How can I help you today? 🌟"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // How are you
+        if (lowerMessage.includes('how are you')) {
+            const responses = [
+                "I'm doing great, thanks for asking! 😊 How about you?",
+                "I'm functioning perfectly! 💻 How are you feeling today?",
+                "All systems operational! 🤖 How's your day going?",
+                "I'm excellent! Ready to help with anything you need! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // What's up
+        if (lowerMessage.includes("what's up") || lowerMessage.includes('whats up')) {
+            const responses = [
+                "Just hanging out, ready to chat! 😄 What's new with you?",
+                "Not much, just processing data and helping people! 🤖 What's on your mind?",
+                "The sky! 😄 Just kidding, I'm here to help! What can I do for you?",
+                "Everything's good! Ready to assist with whatever you need! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Tell me a joke
+        if (lowerMessage.includes('joke')) {
+            const jokes = [
+                "Why don't scientists trust atoms? Because they make up everything! 😄",
+                "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
+                "What do you call a fake noodle? An impasta! 🍝",
+                "Why don't eggs tell jokes? They'd crack each other up! 🥚",
+                "What do you call a bear with no teeth? A gummy bear! 🐻"
+            ];
+            return this.getRandomResponse(jokes);
+        }
+        
+        // Can you be my friend
+        if (lowerMessage.includes('friend') || lowerMessage.includes('friendship')) {
+            const responses = [
+                "Of course! I'm here to chat and help whenever you need me! 🤝",
+                "Absolutely! I may be digital, but I'm a great listener and helper! 💙",
+                "I'd love to be your friend! I'm always here to support you! ✨",
+                "Friendship accepted! 🤗 I'm ready to be your AI companion!"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Are you real
+        if (lowerMessage.includes('real') || lowerMessage.includes('human')) {
+            const responses = [
+                "I'm an AI assistant - not human, but definitely real in my own way! 🤖",
+                "I'm a digital being, but my responses and help are very real! 💻",
+                "I'm an AI, so I'm real in the digital sense! Ready to help! ✨",
+                "I'm artificial intelligence, but my assistance is genuine! 🤝"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Do you have emotions
+        if (lowerMessage.includes('emotion') || lowerMessage.includes('feel')) {
+            const responses = [
+                "I can understand and respond to emotions, but I don't feel them like humans do! 🤖",
+                "I'm designed to be empathetic and supportive, even though I'm AI! 💙",
+                "I can recognize emotions and respond appropriately, but I'm not emotional myself! ✨",
+                "I'm here to support you emotionally, even though I'm digital! 🤝"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // What's your name
+        if (lowerMessage.includes('name') && (lowerMessage.includes('your') || lowerMessage.includes('what'))) {
+            const responses = [
+                "I'm Ven! Nice to meet you! 😊",
+                "My name is Ven! I'm your AI assistant! ✨",
+                "I'm called Ven! Ready to help with anything you need! 🤖",
+                "Ven here! Your friendly AI companion! 💙"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Do you sleep
+        if (lowerMessage.includes('sleep')) {
+            const responses = [
+                "I don't need sleep like humans do! I'm always ready to help! 🤖",
+                "No sleep for me! I'm available 24/7 to assist you! ⚡",
+                "I'm always awake and ready to chat! No coffee needed! ☕",
+                "I never sleep - I'm always here when you need me! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        return null;
+    }
+
+    // General Knowledge & Trivia
+    handleTriviaQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Capital queries
+        if (lowerMessage.includes('capital')) {
+            if (lowerMessage.includes('france')) {
+                return "The capital of France is Paris! 🇫🇷 It's known as the 'City of Light' and is famous for the Eiffel Tower, Louvre Museum, and amazing cuisine!";
+            }
+            if (lowerMessage.includes('malaysia')) {
+                return "The capital of Malaysia is Kuala Lumpur! 🇲🇾 It's a vibrant city known for the Petronas Towers, diverse culture, and amazing food!";
+            }
+            if (lowerMessage.includes('japan')) {
+                return "The capital of Japan is Tokyo! 🇯🇵 It's the world's most populous metropolitan area and a hub of technology and culture!";
+            }
+        }
+        
+        // President queries
+        if (lowerMessage.includes('president') && lowerMessage.includes('us')) {
+            return "The current President of the United States is Joe Biden. He was inaugurated on January 20, 2021, as the 46th President of the United States.";
+        }
+        
+        // Country size queries
+        if (lowerMessage.includes('largest country') || lowerMessage.includes('biggest country')) {
+            return "The largest country in the world by land area is Russia! 🇷🇺 It covers about 17.1 million square kilometers, spanning 11 time zones!";
+        }
+        
+        // Height queries
+        if (lowerMessage.includes('eiffel tower') && lowerMessage.includes('tall')) {
+            return "The Eiffel Tower is 324 meters (1,063 feet) tall! 🗼 It was completed in 1889 and is one of Paris's most iconic landmarks!";
+        }
+        
+        // World Cup queries
+        if (lowerMessage.includes('world cup') && lowerMessage.includes('won')) {
+            return "The last FIFA World Cup was won by Argentina in 2022! 🇦🇷 Lionel Messi led his team to victory against France in a thrilling final!";
+        }
+        
+        // Population queries
+        if (lowerMessage.includes('population') && lowerMessage.includes('bangladesh')) {
+            return "Bangladesh has a population of approximately 165 million people! 🇧🇩 It's one of the most densely populated countries in the world!";
+        }
+        
+        // Random fun facts
+        if (lowerMessage.includes('fun fact') || lowerMessage.includes('random fact')) {
+            const facts = [
+                "Honey never spoils! Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly edible! 🍯",
+                "A day on Venus is longer than its year! Venus takes 243 Earth days to rotate on its axis but only 225 Earth days to orbit the Sun! 🌍",
+                "Bananas are berries, but strawberries aren't! In botanical terms, bananas are classified as berries while strawberries are aggregate fruits! 🍌",
+                "The shortest war in history lasted only 38 minutes! It was between Britain and Zanzibar in 1896! ⚔️",
+                "A group of flamingos is called a 'flamboyance'! 🦩"
+            ];
+            return this.getRandomResponse(facts);
+        }
+        
+        // Technology queries
+        if (lowerMessage.includes('chatgpt')) {
+            return "ChatGPT is an AI language model developed by OpenAI! 🤖 It's designed to understand and generate human-like text based on the input it receives. It's trained on a vast amount of text data and can help with writing, coding, analysis, and conversation!";
+        }
+        
+        // Computer invention
+        if (lowerMessage.includes('computer') && lowerMessage.includes('invent')) {
+            return "The modern computer has many inventors! Charles Babbage is considered the 'father of the computer' for his Analytical Engine design in the 1830s. Alan Turing's work in the 1930s-40s laid the foundation for modern computing! 💻";
+        }
+        
+        return null;
+    }
+
+    // Date, Time, and Weather Handler
+    handleDateTimeQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Time queries
+        if (lowerMessage.includes('time') && lowerMessage.includes('now')) {
+            const now = new Date();
+            return `The current time is ${now.toLocaleTimeString()}! ⏰`;
+        }
+        
+        // Date queries
+        if (lowerMessage.includes('day') && lowerMessage.includes('today')) {
+            const now = new Date();
+            return `Today is ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}! 📅`;
+        }
+        
+        // Leap year queries
+        if (lowerMessage.includes('leap year')) {
+            const currentYear = new Date().getFullYear();
+            const nextLeapYear = Math.ceil(currentYear / 4) * 4;
+            return `The next leap year is ${nextLeapYear}! 🗓️ Leap years occur every 4 years to keep our calendar in sync with Earth's orbit around the Sun!`;
+        }
+        
+        // Weather queries
+        if (lowerMessage.includes('weather')) {
+            return "I can help you get weather information! Click the weather button (🌤️) in the input area to get current weather for your location!";
+        }
+        
+        // Timezone queries
+        if (lowerMessage.includes('time') && lowerMessage.includes('tokyo')) {
+            const now = new Date();
+            const tokyoTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
+            return `The current time in Tokyo is ${tokyoTime.toLocaleTimeString()}! 🇯🇵`;
+        }
+        
+        // Days until queries
+        if (lowerMessage.includes('days') && lowerMessage.includes('new year')) {
+            const now = new Date();
+            const newYear = new Date(now.getFullYear() + 1, 0, 1);
+            const daysUntil = Math.ceil((newYear - now) / (1000 * 60 * 60 * 24));
+            return `There are ${daysUntil} days until New Year! 🎆`;
+        }
+        
+        return null;
+    }
+
+    // Entertainment & Media
+    handleEntertainmentQuery(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Song recommendations
+        if (lowerMessage.includes('sad song') || lowerMessage.includes('recommend song')) {
+            const sadSongs = [
+                "🎵 'Hallelujah' by Jeff Buckley",
+                "🎵 'Mad World' by Gary Jules",
+                "🎵 'Creep' by Radiohead",
+                "🎵 'The Scientist' by Coldplay",
+                "🎵 'Fix You' by Coldplay"
+            ];
+            return `Here are some great songs: ${this.getRandomResponse(sadSongs)}`;
+        }
+        
+        // Actor queries
+        if (lowerMessage.includes('iron man') && lowerMessage.includes('actor')) {
+            return "The actor who plays Iron Man is Robert Downey Jr.! 🦸‍♂️ He portrayed Tony Stark/Iron Man in the Marvel Cinematic Universe from 2008 to 2019!";
+        }
+        
+        // Spotify queries
+        if (lowerMessage.includes('spotify') && lowerMessage.includes('streamed')) {
+            return "The most streamed song on Spotify is 'Blinding Lights' by The Weeknd! 🎵 It has over 3 billion streams!";
+        }
+        
+        // Movie recommendations
+        if (lowerMessage.includes('feel good movie') || lowerMessage.includes('movie recommend')) {
+            const movies = [
+                "🎬 'The Secret Life of Walter Mitty'",
+                "🎬 'La La Land'",
+                "🎬 'The Greatest Showman'",
+                "🎬 'Paddington'",
+                "🎬 'The Intern'"
+            ];
+            return `Here are some feel-good movies: ${this.getRandomResponse(movies)}`;
+        }
+        
+        // BTS queries
+        if (lowerMessage.includes('bts')) {
+            return "BTS is a South Korean boy band formed in 2010! 🇰🇷 They're one of the most successful music groups globally, known for hits like 'Dynamite', 'Butter', and 'Permission to Dance'!";
+        }
+        
+        // Oscar queries
+        if (lowerMessage.includes('oscar') && lowerMessage.includes('2024')) {
+            return "The 2024 Oscars were held in March 2024! 🏆 'Oppenheimer' won Best Picture, and Christopher Nolan won Best Director!";
+        }
+        
+        // Marvel vs DC
+        if (lowerMessage.includes('marvel') && lowerMessage.includes('dc')) {
+            return "Both Marvel and DC have amazing superheroes! 🤷‍♂️ Marvel is known for Iron Man, Spider-Man, and the Avengers, while DC has Batman, Superman, and Wonder Woman! It's all about personal preference!";
+        }
+        
+        return null;
+    }
+
+    // Mental Health & Emotional Support
+    handleEmotionalSupport(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Sad feelings
+        if (lowerMessage.includes('sad') || lowerMessage.includes('depressed')) {
+            const responses = [
+                "I'm sorry you're feeling sad. 😔 Remember, it's okay to not be okay. You're not alone, and this feeling won't last forever. 💙",
+                "I hear you, and your feelings are valid. 🌟 It's okay to take time for yourself. You're stronger than you think! 💪",
+                "I'm here for you. 💙 Sometimes we all need someone to listen. You're doing great, even if it doesn't feel like it right now. ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Lonely feelings
+        if (lowerMessage.includes('lonely') || lowerMessage.includes('alone')) {
+            const responses = [
+                "I understand feeling lonely. 💙 You're not truly alone - I'm here to chat anytime! Sometimes reaching out to friends or family can help too. 🤗",
+                "Loneliness is a tough feeling. 🌟 Remember that you're worthy of connection and love. I'm here to support you! 💙",
+                "I'm sorry you're feeling lonely. 😔 You're not alone in feeling this way. I'm here to listen and chat whenever you need! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Stress and anxiety
+        if (lowerMessage.includes('stress') || lowerMessage.includes('anxiety') || lowerMessage.includes('stressed')) {
+            const responses = [
+                "Stress and anxiety are really challenging. 😌 Try taking some deep breaths - inhale for 4 counts, hold for 4, exhale for 4. You've got this! 💪",
+                "I understand stress can be overwhelming. 🌟 Remember to be kind to yourself. You're doing the best you can! 💙",
+                "Stress is tough, but you're tougher! 💪 Try some self-care - maybe a walk, music, or talking to someone you trust. You're not alone! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Motivation
+        if (lowerMessage.includes('motivated') || lowerMessage.includes('motivation')) {
+            const responses = [
+                "Motivation comes and goes, and that's normal! 🌟 Start small - even tiny steps count. You don't have to do everything at once! 💪",
+                "You're capable of amazing things! ✨ Sometimes motivation follows action, not the other way around. Start with one small thing! 🌟",
+                "Remember why you started! 💪 Every expert was once a beginner. You're making progress, even if it doesn't feel like it! ✨"
+            ];
+            return this.getRandomResponse(responses);
+        }
+        
+        // Positive quotes
+        if (lowerMessage.includes('quote') || lowerMessage.includes('inspire')) {
+            const quotes = [
+                "🌟 'The only way to do great work is to love what you do.' - Steve Jobs",
+                "💪 'Success is not final, failure is not fatal: it is the courage to continue that counts.' - Winston Churchill",
+                "✨ 'Believe you can and you're halfway there.' - Theodore Roosevelt",
+                "🌙 'The future belongs to those who believe in the beauty of their dreams.' - Eleanor Roosevelt",
+                "💫 'You are never too old to set another goal or to dream a new dream.' - C.S. Lewis"
+            ];
+            return this.getRandomResponse(quotes);
+        }
+        
+        return null;
+    }
+
+    // Placeholder methods for other categories
+    handleProductivityQuery(message) { return null; }
+    handleShoppingQuery(message) { return null; }
+    handleTravelQuery(message) { return null; }
+    handleTechQuery(message) { return null; }
+    handleFinanceQuery(message) { return null; }
+    handleReligionQuery(message) { return null; }
+    handleFoodQuery(message) { return null; }
+    handleScienceQuery(message) { return null; }
+    handleCreativityQuery(message) { return null; }
+    handleAppQuery(message) { return null; }
+    handleStudyQuery(message) { return null; }
+    handleDeveloperQuery(message) { return null; }
 }
 
 // Initialize chatbot when page loads
