@@ -1126,6 +1126,15 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
         height: 26px;
         font-size: 11px;
     }
+    
+    /* Additional mobile adjustments for user area */
+    .sidebar-footer {
+        bottom: 50px; /* Slightly less margin for smaller screens */
+    }
+    
+    .sidebar-content {
+        margin-bottom: 120px; /* Adjusted for smaller screens */
+    }
 }
 
 /* Apply safe area insets for smaller screens when supported */
@@ -1627,6 +1636,8 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
         width: 260px;
         margin-left: 0;
         z-index: 2000;
+        /* Add extra bottom margin to account for browser UI */
+        bottom: 60px; /* Move up by 60px to clear browser bar */
         /* Safe area inset for iOS/Android */
         padding-bottom: max(14px, env(safe-area-inset-bottom));
     }
@@ -1635,6 +1646,6 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
         z-index: 1999;
     }
     .sidebar-content {
-        margin-bottom: 70px; /* Height of the footer + some space */
+        margin-bottom: 130px; /* Increased margin to account for moved footer */
     }
 } 
