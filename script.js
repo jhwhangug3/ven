@@ -2180,7 +2180,12 @@ I'm here to help once I understand better what you're looking for! 😊`;
         avatar.className = 'avatar';
         
         if (sender === 'user') {
-            avatar.innerHTML = '<i class="fas fa-user"></i>';
+            // Check if user has a profile picture
+            if (this.isLoggedIn && this.currentUser && this.currentUser.profileImage) {
+                avatar.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+            }
         } else {
             avatar.innerHTML = '<i class="fas fa-robot"></i>';
         }
@@ -5867,6 +5872,10 @@ What specifically would you like to know? I'm here to help! 🤝`
         // Save updated data
         this.saveUserData();
         this.updateUserInterface();
+        
+        // Refresh the current chat display to show updated profile pictures
+        this.displayCurrentChat();
+        
         this.hideEditProfileModal();
         
         this.addMessage(`Profile updated successfully! Your name is now ${newName}.`, 'bot');
