@@ -205,6 +205,12 @@ class Chatbot {
         // Ensure user interface is updated after everything is initialized
         setTimeout(() => {
             this.updateUserInterface();
+            // Debug: Check user login status
+            console.log('Initialization complete. User status:', {
+                isLoggedIn: this.isLoggedIn,
+                hasCurrentUser: !!this.currentUser,
+                hasProfileImage: this.currentUser ? !!this.currentUser.profileImage : false
+            });
         }, 200);
         
         // Focus on input when page loads
@@ -661,10 +667,12 @@ class Chatbot {
                              lowerMessage.includes('where is') ||
                              lowerMessage.includes('when was') ||
                              // Check if it's just a single word that could be a person's name
+                             // But exclude common words and greetings
                              (message.trim().split(' ').length === 1 && 
                               message.trim().length >= 3 && 
                               message.trim().length <= 20 &&
-                              /^[a-zA-Z]+$/.test(message.trim()));
+                              /^[a-zA-Z]+$/.test(message.trim()) &&
+                              !this.isCommonWord(message.trim()));
         
         // If it's a search query, skip generic responses and search directly
         if (isSearchQuery) {
@@ -2186,6 +2194,12 @@ I'm here to help once I understand better what you're looking for! 😊`;
                 avatar.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
             } else {
                 console.log('Using default user icon - no profile image available');
+                console.log('User state:', {
+                    isLoggedIn: this.isLoggedIn,
+                    hasCurrentUser: !!this.currentUser,
+                    hasProfileImage: this.currentUser ? !!this.currentUser.profileImage : false,
+                    profileImageLength: this.currentUser && this.currentUser.profileImage ? this.currentUser.profileImage.length : 0
+                });
                 avatar.innerHTML = '<i class="fas fa-user"></i>';
             }
         } else {
@@ -5904,6 +5918,9 @@ What specifically would you like to know? I'm here to help! 🤝`
         // Refresh the current chat display to show updated profile pictures
         this.displayCurrentChat();
         
+        // Also update all existing user message avatars in the current chat
+        this.updateExistingUserAvatars();
+        
         this.hideEditProfileModal();
         
         this.addMessage(`Profile updated successfully! Your name is now ${newName}.`, 'bot');
@@ -6533,6 +6550,40 @@ What specifically would you like to know? I'm here to help! 🤝`
                 // For now, we'll just ensure the user context is maintained
             });
         }
+    }
+    
+    updateExistingUserAvatars() {
+        // Update all existing user message avatars in the current chat
+        const userAvatars = document.querySelectorAll('.message.user .avatar');
+        userAvatars.forEach(avatar => {
+            if (this.isLoggedIn && this.currentUser && this.currentUser.profileImage) {
+                avatar.innerHTML = `<img src="${this.currentUser.profileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+            }
+        });
+        console.log(`Updated ${userAvatars.length} user avatars`);
+    }
+    
+    // Test method to check profile picture functionality
+    testProfilePicture() {
+        console.log('=== Profile Picture Test ===');
+        console.log('Is logged in:', this.isLoggedIn);
+        console.log('Current user:', this.currentUser);
+        if (this.currentUser) {
+            console.log('User name:', this.currentUser.name);
+            console.log('Has profile image:', !!this.currentUser.profileImage);
+            if (this.currentUser.profileImage) {
+                console.log('Profile image length:', this.currentUser.profileImage.length);
+                console.log('Profile image preview:', this.currentUser.profileImage.substring(0, 50) + '...');
+            }
+        }
+        
+        // Force update all user avatars
+        this.updateExistingUserAvatars();
+        
+        // Send a test message
+        this.addMessage('Test message to check profile picture', 'user');
     }
     
 
