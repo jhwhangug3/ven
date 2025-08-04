@@ -1617,3 +1617,24 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     color: #ececf1;
     font-size: 14px;
 } 
+
+@media (max-width: 768px) {
+    .sidebar-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 260px;
+        margin-left: 0;
+        z-index: 2000;
+        /* Safe area inset for iOS/Android */
+        padding-bottom: max(14px, env(safe-area-inset-bottom));
+    }
+    .sidebar {
+        /* Make sure sidebar is above the footer */
+        z-index: 1999;
+    }
+    .sidebar-content {
+        margin-bottom: 70px; /* Height of the footer + some space */
+    }
+} 
