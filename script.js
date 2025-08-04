@@ -146,13 +146,20 @@ class Chatbot {
         this.chatHistory = [];
         this.currentChatId = null;
         
-        // Conversation context tracking
+        // Enhanced conversation context tracking
         this.conversationContext = {
             currentTopic: null,
             waitingFor: null,
             lastQuestion: null,
             lastResponse: null,
-            conversationHistory: []
+            conversationHistory: [],
+            emotion: null,
+            topicHistory: [],
+            userMood: null,
+            conversationFlow: [],
+            questionCount: 0,
+            responseCount: 0,
+            lastInteractionTime: null
         };
         
         // init() will be called separately after construction
@@ -559,6 +566,9 @@ class Chatbot {
         this.addMessage(message, 'user');
         this.messageInput.value = '';
         
+        // Update conversation context
+        this.updateConversationContext(message);
+        
         // Show typing indicator
         this.showTypingIndicator();
         
@@ -570,6 +580,9 @@ class Chatbot {
             // Apply customization styling to the response
             const styledResponse = this.applyResponseStyle(response);
             this.addMessage(styledResponse, 'bot');
+            
+            // Update bot's response context
+            this.updateBotResponseContext(response);
         } catch (error) {
             this.hideTypingIndicator();
             const errorMessage = "I'm sorry, I encountered an error while searching for information. Please try again.";
@@ -3284,12 +3297,97 @@ What specifically would you like to know? I'm here to help! 🤝`
     handleContextualResponse(message) {
         const lowerMessage = message.toLowerCase();
         
-        console.log('Current waitingFor:', this.conversationContext.waitingFor);
+        console.log('Enhanced contextual analysis:', {
+            waitingFor: this.conversationContext.waitingFor,
+            currentTopic: this.conversationContext.currentTopic,
+            lastQuestion: this.conversationContext.lastQuestion,
+            userMood: this.conversationContext.userMood,
+            emotion: this.conversationContext.emotion,
+            topicHistory: this.conversationContext.topicHistory,
+            conversationLength: this.conversationContext.conversationHistory.length
+        });
         
         // Check if we're waiting for a specific response
         if (this.conversationContext.waitingFor && this.conversationContext.waitingFor !== null) {
             console.log('Waiting for:', this.conversationContext.waitingFor);
             return this.handleWaitingResponse(message);
+        }
+        
+        // Enhanced contextual responses based on conversation history and mood
+        if (this.conversationContext.lastQuestion) {
+            const lastQuestion = this.conversationContext.lastQuestion.toLowerCase();
+            const userMood = this.conversationContext.userMood;
+            
+            // Handle wellbeing questions with mood-aware responses
+            if (lastQuestion.includes('how are you') || lastQuestion.includes('how do you feel') || lastQuestion.includes('how\'s it going')) {
+                if (userMood === 'very_positive' || lowerMessage.includes('amazing') || lowerMessage.includes('fantastic')) {
+                    this.conversationContext.lastQuestion = null;
+                    return "Wow, that sounds absolutely amazing! 🌟 I'm so happy to hear you're feeling fantastic! What's making your day so special?";
+                } else if (userMood === 'positive' || lowerMessage === 'good' || lowerMessage === 'great' || lowerMessage === 'fine') {
+                    this.conversationContext.lastQuestion = null;
+                    return "That's wonderful! 😊 I'm glad you're doing well. What would you like to talk about?";
+                } else if (userMood === 'neutral' || lowerMessage === 'okay' || lowerMessage === 'alright') {
+                    this.conversationContext.lastQuestion = null;
+                    return "That's okay! Sometimes neutral is perfectly fine. 😊 Is there anything that might make your day better?";
+                } else if (userMood === 'negative' || lowerMessage === 'bad' || lowerMessage === 'not good') {
+                    this.conversationContext.lastQuestion = null;
+                    return "I'm sorry to hear that! 😔 What's going on? I'm here to listen if you want to talk about it.";
+                } else if (userMood === 'very_negative' || lowerMessage.includes('terrible') || lowerMessage.includes('awful')) {
+                    this.conversationContext.lastQuestion = null;
+                    return "I'm really sorry you're feeling that way! 💙 That sounds really tough. Would you like to talk about what's happening? I'm here to listen.";
+                }
+            }
+            
+            // Handle topic-specific questions
+            if (lastQuestion.includes('what do you do') || lastQuestion.includes('what are you doing')) {
+                if (lowerMessage.includes('work') || lowerMessage.includes('job') || lowerMessage.includes('office')) {
+                    this.conversationContext.lastQuestion = null;
+                    this.conversationContext.currentTopic = 'work';
+                    return "Work can be both challenging and rewarding! 💼 How's your work day going? Any interesting projects you're working on?";
+                } else if (lowerMessage.includes('study') || lowerMessage.includes('school') || lowerMessage.includes('learn')) {
+                    this.conversationContext.lastQuestion = null;
+                    this.conversationContext.currentTopic = 'education';
+                    return "Learning is such an exciting journey! 📚 What are you studying? I'd love to hear about your educational interests!";
+                }
+            }
+        }
+        
+        // Topic continuity - if we've been talking about a specific topic
+        if (this.conversationContext.currentTopic && this.conversationContext.topicHistory.length > 0) {
+            const currentTopic = this.conversationContext.currentTopic;
+            const recentTopics = this.conversationContext.topicHistory.slice(-3);
+            
+            if (currentTopic === 'work' && (lowerMessage.includes('meeting') || lowerMessage.includes('project') || lowerMessage.includes('boss'))) {
+                return "Work dynamics can be complex! 🤝 How are things going with your colleagues and projects?";
+            } else if (currentTopic === 'education' && (lowerMessage.includes('class') || lowerMessage.includes('teacher') || lowerMessage.includes('exam'))) {
+                return "Education is such a valuable investment in yourself! 🎓 How are your studies progressing?";
+            } else if (currentTopic === 'technology' && (lowerMessage.includes('computer') || lowerMessage.includes('phone') || lowerMessage.includes('app'))) {
+                return "Technology is constantly evolving! 💻 What tech are you most excited about these days?";
+            }
+        }
+        
+        // Emotion-aware responses for standalone statements
+        if (this.conversationContext.userMood && !this.conversationContext.lastQuestion) {
+            if (this.conversationContext.userMood === 'very_positive') {
+                return "Your enthusiasm is contagious! 🌟 I can feel your positive energy! What's making you feel so amazing today?";
+            } else if (this.conversationContext.userMood === 'positive') {
+                return "That's great to hear! 😊 What would you like to chat about?";
+            } else if (this.conversationContext.userMood === 'negative') {
+                return "I sense you might be having a tough time. 😔 Would you like to talk about what's on your mind? I'm here to listen.";
+            } else if (this.conversationContext.userMood === 'very_negative') {
+                return "I'm really concerned about how you're feeling. 💙 Sometimes talking helps. Would you like to share what's going on?";
+            }
+        }
+        
+        // Conversation flow analysis
+        if (this.conversationContext.conversationHistory.length >= 3) {
+            const recentMessages = this.conversationContext.conversationHistory.slice(-3);
+            const questionCount = recentMessages.filter(msg => msg.type === 'question').length;
+            
+            // If user has been asking many questions, offer to help
+            if (questionCount >= 2) {
+                return "I notice you've been asking a lot of questions! 🤔 Is there something specific you're trying to figure out? I'm happy to help!";
+            }
         }
         
         // Check for age guessing game
@@ -3371,33 +3469,323 @@ What specifically would you like to know? I'm here to help! 🤝`
             waitingFor: null,
             lastQuestion: null,
             lastResponse: null,
-            conversationHistory: []
+            conversationHistory: [],
+            emotion: null,
+            topicHistory: [],
+            userMood: null,
+            conversationFlow: [],
+            questionCount: 0,
+            responseCount: 0,
+            lastInteractionTime: null
         };
+    }
+    
+    getMessageType(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        if (this.isQuestion(message)) return 'question';
+        if (this.isGreeting(message)) return 'greeting';
+        if (this.isResponse(message)) return 'response';
+        if (this.isStatement(message)) return 'statement';
+        if (this.isCommand(message)) return 'command';
+        
+        return 'general';
+    }
+    
+    isQuestion(message) {
+        const lowerMessage = message.toLowerCase();
+        const questionWords = ['how', 'what', 'when', 'where', 'why', 'who', 'which', 'can', 'could', 'would', 'will', 'do', 'does', 'is', 'are', 'was', 'were'];
+        const questionPatterns = [
+            /how are you/i,
+            /how do you feel/i,
+            /how's it going/i,
+            /what's up/i,
+            /how's your day/i,
+            /what are you doing/i,
+            /how old are you/i,
+            /what's your name/i,
+            /where are you from/i,
+            /what do you do/i,
+            /can you help/i,
+            /could you tell me/i,
+            /would you like/i,
+            /do you know/i,
+            /are you/i,
+            /is it/i,
+            /will you/i
+        ];
+        
+        // Check for question mark
+        if (message.includes('?')) return true;
+        
+        // Check for question words at the beginning
+        if (questionWords.some(word => lowerMessage.startsWith(word))) return true;
+        
+        // Check for question patterns
+        if (questionPatterns.some(pattern => pattern.test(message))) return true;
+        
+        return false;
+    }
+    
+    isGreeting(message) {
+        const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'good night', 'morning', 'afternoon', 'evening', 'night'];
+        return greetings.includes(message.toLowerCase().trim());
+    }
+    
+    isResponse(message) {
+        const responses = ['good', 'bad', 'okay', 'ok', 'fine', 'great', 'awesome', 'cool', 'nice', 'wow', 'yeah', 'yes', 'no', 'maybe', 'sure', 'alright', 'thanks', 'thank you'];
+        return responses.includes(message.toLowerCase().trim());
+    }
+    
+    isStatement(message) {
+        const lowerMessage = message.toLowerCase();
+        return lowerMessage.length > 10 && !this.isQuestion(message) && !this.isGreeting(message) && !this.isResponse(message);
+    }
+    
+    isCommand(message) {
+        const commands = ['help', 'stop', 'start', 'go', 'come', 'get', 'give', 'take', 'make', 'let', 'put', 'set', 'keep', 'hold', 'find', 'look', 'see', 'watch', 'listen', 'hear', 'say', 'tell', 'talk', 'speak'];
+        return commands.some(cmd => message.toLowerCase().includes(cmd));
+    }
+    
+    detectEmotion(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Positive emotions
+        if (lowerMessage.includes('happy') || lowerMessage.includes('joy') || lowerMessage.includes('excited') || lowerMessage.includes('great') || lowerMessage.includes('awesome') || lowerMessage.includes('wonderful')) {
+            return 'positive';
+        }
+        
+        // Negative emotions
+        if (lowerMessage.includes('sad') || lowerMessage.includes('angry') || lowerMessage.includes('frustrated') || lowerMessage.includes('terrible') || lowerMessage.includes('bad') || lowerMessage.includes('awful')) {
+            return 'negative';
+        }
+        
+        // Neutral emotions
+        if (lowerMessage.includes('okay') || lowerMessage.includes('fine') || lowerMessage.includes('alright') || lowerMessage.includes('normal')) {
+            return 'neutral';
+        }
+        
+        return null;
+    }
+    
+    detectTopic(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Technology topics
+        if (lowerMessage.includes('computer') || lowerMessage.includes('phone') || lowerMessage.includes('internet') || lowerMessage.includes('app') || lowerMessage.includes('software') || lowerMessage.includes('programming')) {
+            return 'technology';
+        }
+        
+        // Health topics
+        if (lowerMessage.includes('health') || lowerMessage.includes('sick') || lowerMessage.includes('doctor') || lowerMessage.includes('medicine') || lowerMessage.includes('exercise') || lowerMessage.includes('diet')) {
+            return 'health';
+        }
+        
+        // Work topics
+        if (lowerMessage.includes('work') || lowerMessage.includes('job') || lowerMessage.includes('office') || lowerMessage.includes('boss') || lowerMessage.includes('meeting') || lowerMessage.includes('project')) {
+            return 'work';
+        }
+        
+        // Education topics
+        if (lowerMessage.includes('school') || lowerMessage.includes('study') || lowerMessage.includes('learn') || lowerMessage.includes('class') || lowerMessage.includes('teacher') || lowerMessage.includes('student')) {
+            return 'education';
+        }
+        
+        // Entertainment topics
+        if (lowerMessage.includes('movie') || lowerMessage.includes('music') || lowerMessage.includes('game') || lowerMessage.includes('book') || lowerMessage.includes('tv') || lowerMessage.includes('show')) {
+            return 'entertainment';
+        }
+        
+        // Personal topics
+        if (lowerMessage.includes('family') || lowerMessage.includes('friend') || lowerMessage.includes('relationship') || lowerMessage.includes('love') || lowerMessage.includes('home') || lowerMessage.includes('life')) {
+            return 'personal';
+        }
+        
+        return null;
+    }
+    
+    detectUserMood(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Very positive
+        if (lowerMessage.includes('amazing') || lowerMessage.includes('fantastic') || lowerMessage.includes('incredible') || lowerMessage.includes('perfect')) {
+            return 'very_positive';
+        }
+        
+        // Positive
+        if (lowerMessage.includes('good') || lowerMessage.includes('great') || lowerMessage.includes('awesome') || lowerMessage.includes('wonderful') || lowerMessage.includes('happy')) {
+            return 'positive';
+        }
+        
+        // Neutral
+        if (lowerMessage.includes('okay') || lowerMessage.includes('fine') || lowerMessage.includes('alright') || lowerMessage.includes('normal')) {
+            return 'neutral';
+        }
+        
+        // Negative
+        if (lowerMessage.includes('bad') || lowerMessage.includes('terrible') || lowerMessage.includes('awful') || lowerMessage.includes('sad') || lowerMessage.includes('angry')) {
+            return 'negative';
+        }
+        
+        // Very negative
+        if (lowerMessage.includes('horrible') || lowerMessage.includes('miserable') || lowerMessage.includes('depressed') || lowerMessage.includes('hate')) {
+            return 'very_negative';
+        }
+        
+        return null;
+    }
+    
+    updateBotResponseContext(response) {
+        const currentTime = new Date();
+        
+        // Update conversation flow with bot response
+        this.conversationContext.conversationFlow.push({
+            type: 'bot',
+            message: response,
+            timestamp: currentTime
+        });
+        
+        // Update last response
+        this.conversationContext.lastResponse = response;
+        
+        // Clear waiting state if we provided a response
+        if (this.conversationContext.waitingFor) {
+            this.conversationContext.waitingFor = null;
+        }
+        
+        // Clear last question if we responded to it
+        if (this.conversationContext.lastQuestion) {
+            this.conversationContext.lastQuestion = null;
+        }
+        
+        // Update conversation history with bot response
+        this.conversationContext.conversationHistory.push({
+            message: response,
+            timestamp: currentTime.toISOString(),
+            type: 'bot_response',
+            emotion: this.detectEmotion(response),
+            topic: this.detectTopic(response)
+        });
+        
+        // Keep only last 15 messages
+        if (this.conversationContext.conversationHistory.length > 15) {
+            this.conversationContext.conversationHistory.shift();
+        }
+        
+        console.log('Updated bot response context:', {
+            lastResponse: this.conversationContext.lastResponse,
+            conversationLength: this.conversationContext.conversationHistory.length,
+            flowLength: this.conversationContext.conversationFlow.length
+        });
+    }
+    
+    updateConversationContext(message) {
+        const lowerMessage = message.toLowerCase();
+        const currentTime = new Date();
+        
+        // Update conversation history with enhanced metadata
+        this.conversationContext.conversationHistory.push({
+            message: message,
+            timestamp: currentTime.toISOString(),
+            type: this.getMessageType(message),
+            emotion: this.detectEmotion(message),
+            topic: this.detectTopic(message)
+        });
+        
+        // Keep only last 15 messages for context
+        if (this.conversationContext.conversationHistory.length > 15) {
+            this.conversationContext.conversationHistory.shift();
+        }
+        
+        // Update conversation flow
+        this.conversationContext.conversationFlow.push({
+            type: 'user',
+            message: message,
+            timestamp: currentTime
+        });
+        
+        // Update interaction time
+        this.conversationContext.lastInteractionTime = currentTime;
+        
+        // Detect and track topics
+        const detectedTopic = this.detectTopic(message);
+        if (detectedTopic && !this.conversationContext.topicHistory.includes(detectedTopic)) {
+            this.conversationContext.topicHistory.push(detectedTopic);
+        }
+        
+        // Update user mood based on message content
+        this.conversationContext.userMood = this.detectUserMood(message);
+        
+        // Check if this message is a question that expects a response
+        if (this.isQuestion(message)) {
+            this.conversationContext.lastQuestion = message;
+            this.conversationContext.questionCount++;
+            console.log('Set last question:', message);
+        }
+        
+        // Track response patterns
+        this.conversationContext.responseCount++;
+        
+        console.log('Enhanced conversation context:', {
+            lastQuestion: this.conversationContext.lastQuestion,
+            currentTopic: this.conversationContext.currentTopic,
+            userMood: this.conversationContext.userMood,
+            emotion: this.conversationContext.emotion,
+            topicHistory: this.conversationContext.topicHistory,
+            historyLength: this.conversationContext.conversationHistory.length,
+            questionCount: this.conversationContext.questionCount,
+            responseCount: this.conversationContext.responseCount
+        });
     }
     
     handleGreetingQuery(message) {
         const lowerMessage = message.toLowerCase().trim();
         
         // Simple greetings that should get friendly responses
-        const greetings = [
-            'hey', 'hello', 'hi', 'hi there', 'hello there', 'hey there',
-            'good morning', 'good afternoon', 'good evening', 'good night',
-            'morning', 'afternoon', 'evening', 'night'
-        ];
-        
+        const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
         if (greetings.includes(lowerMessage)) {
             const responses = [
-                `Hey there! 👋 How are you doing today?`,
-                `Hello! 😊 Nice to see you! How's your day going?`,
-                `Hi! 👋 How are you feeling today?`,
-                `Hey! 😊 Great to chat with you! What's on your mind?`,
-                `Hello there! 👋 How can I help you today?`,
-                `Hi there! 😊 How's everything going?`,
-                `Hey! 👋 What would you like to talk about?`,
-                `Hello! 😊 I'm here to help! What's up?`
+                "Hello! 👋 How are you doing today?",
+                "Hi there! 😊 What's on your mind?",
+                "Hey! How's it going? 😄",
+                "Hello! How can I help you today? ✨"
             ];
-            
             return this.getRandomResponse(responses);
+        }
+        
+        // Simple responses that should get conversational replies (only if no context)
+        const simpleResponses = ['good', 'bad', 'okay', 'ok', 'fine', 'great', 'awesome', 'cool', 'nice', 'wow', 'yeah', 'yes', 'no', 'maybe', 'sure', 'alright'];
+        if (simpleResponses.includes(lowerMessage)) {
+            // Only give generic responses if there's no conversation context
+            if (!this.conversationContext.lastQuestion && this.conversationContext.conversationHistory.length <= 2) {
+                if (lowerMessage === 'good') {
+                    const responses = [
+                        "That's great! 😊 What would you like to talk about?",
+                        "Awesome! How can I help you today?",
+                        "That's wonderful! What's on your mind? ✨",
+                        "Great to hear! What would you like to know? 😄"
+                    ];
+                    return this.getRandomResponse(responses);
+                } else if (lowerMessage === 'bad') {
+                    const responses = [
+                        "I'm sorry to hear that! 😔 What's going on?",
+                        "That's tough! Want to talk about it?",
+                        "I'm here for you! What happened?",
+                        "That's no good! How can I help? 💙"
+                    ];
+                    return this.getRandomResponse(responses);
+                } else {
+                    const responses = [
+                        "That's nice! What would you like to chat about?",
+                        "Cool! How can I assist you?",
+                        "Great! What's on your mind today?",
+                        "That's good! What would you like to know? 😊"
+                    ];
+                    return this.getRandomResponse(responses);
+                }
+            }
+            // If there is context, let the contextual handler deal with it
+            return null;
         }
         
         return null;
@@ -6584,6 +6972,55 @@ What specifically would you like to know? I'm here to help! 🤝`
         
         // Send a test message
         this.addMessage('Test message to check profile picture', 'user');
+    }
+    
+    isCommonWord(word) {
+        const commonWords = [
+            // Greetings and responses
+            'hi', 'hello', 'hey', 'good', 'bad', 'okay', 'ok', 'fine', 'great', 'awesome', 'cool', 'nice', 'wow', 'yeah', 'yes', 'no', 'maybe', 'sure', 'alright',
+            'thanks', 'thank', 'bye', 'goodbye', 'see', 'you', 'later',
+            
+            // Common responses
+            'good', 'bad', 'okay', 'ok', 'fine', 'great', 'awesome', 'cool', 'nice', 'wow', 'yeah', 'yes', 'no', 'maybe', 'sure', 'alright',
+            
+            // Question words (should be handled by specific handlers)
+            'what', 'how', 'why', 'when', 'where', 'who', 'which',
+            
+            // Common verbs
+            'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'can', 'may', 'might', 'must', 'shall',
+            
+            // Common adjectives
+            'good', 'bad', 'big', 'small', 'hot', 'cold', 'new', 'old', 'young', 'high', 'low', 'fast', 'slow', 'easy', 'hard', 'soft', 'hard', 'easy', 'difficult', 'simple',
+            
+            // Common nouns
+            'time', 'day', 'night', 'work', 'home', 'school', 'food', 'water', 'air', 'fire', 'earth', 'sun', 'moon', 'star', 'tree', 'house', 'car', 'book', 'phone', 'computer',
+            
+            // Common adverbs
+            'very', 'really', 'quite', 'rather', 'too', 'so', 'much', 'more', 'less', 'most', 'least', 'now', 'then', 'here', 'there', 'everywhere', 'somewhere', 'anywhere', 'nowhere',
+            
+            // Common prepositions
+            'in', 'on', 'at', 'by', 'for', 'with', 'without', 'against', 'among', 'between', 'through', 'during', 'before', 'after', 'since', 'until', 'from', 'to', 'of', 'about',
+            
+            // Common conjunctions
+            'and', 'or', 'but', 'nor', 'yet', 'so', 'because', 'although', 'unless', 'while', 'whereas', 'since', 'as', 'if', 'unless', 'until', 'when', 'where', 'why', 'how',
+            
+            // Common articles
+            'a', 'an', 'the',
+            
+            // Common pronouns
+            'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'his', 'hers', 'ours', 'theirs',
+            
+            // Common numbers and words
+            'one', 'two', 'three', 'first', 'second', 'third', 'last', 'next', 'previous', 'current', 'past', 'future', 'present',
+            
+            // Common commands
+            'help', 'stop', 'start', 'go', 'come', 'get', 'give', 'take', 'make', 'let', 'put', 'set', 'keep', 'hold', 'find', 'look', 'see', 'watch', 'listen', 'hear', 'say', 'tell', 'talk', 'speak',
+            
+            // Common expressions
+            'well', 'right', 'wrong', 'true', 'false', 'real', 'fake', 'same', 'different', 'similar', 'opposite', 'like', 'love', 'hate', 'want', 'need', 'like', 'dislike', 'prefer', 'choose', 'pick', 'select'
+        ];
+        
+        return commonWords.includes(word.toLowerCase());
     }
     
 
