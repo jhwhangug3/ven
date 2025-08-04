@@ -570,6 +570,20 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     border-radius: 8px 8px 0 0;
     border: 1px solid rgba(26, 26, 26, 0.3);
     border-bottom: none;
+    /* Add safe area insets for mobile browsers */
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    bottom: env(safe-area-inset-bottom);
+    /* Fallback for browsers without env() support */
+    padding-bottom: 14px;
+    bottom: 0;
+}
+
+/* Apply safe area insets only when supported */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .sidebar-footer {
+        padding-bottom: max(14px, env(safe-area-inset-bottom));
+        bottom: env(safe-area-inset-bottom);
+    }
 }
 
 .user-info {
@@ -579,6 +593,9 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     color: #ececf1;
     font-size: 14px;
     padding: 8px 0;
+    /* Ensure user button is always visible */
+    position: relative;
+    z-index: 1001;
 }
 
 .user-avatar {
@@ -996,6 +1013,7 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     .hamburger-menu {
         display: flex;
         transition: transform 0.3s ease;
+        top: 20px;
     }
     
     .main-content {
@@ -1048,6 +1066,29 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
     }
 }
 
+/* Apply safe area insets for mobile when supported */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+        .sidebar {
+            /* Add safe area insets for mobile */
+            height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            top: env(safe-area-inset-top);
+            bottom: env(safe-area-inset-bottom);
+        }
+        
+        .hamburger-menu {
+            /* Adjust hamburger menu position for safe area */
+            top: max(20px, env(safe-area-inset-top) + 10px);
+        }
+        
+        .chat-input-area {
+            /* Add safe area insets for mobile input area */
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            bottom: env(safe-area-inset-bottom);
+        }
+    }
+}
+
 @media (min-width: 769px) {
     .hamburger-menu {
         display: none; /* Hide on desktop */
@@ -1084,6 +1125,16 @@ body.light-mode .chat-messages::-webkit-scrollbar-thumb:hover {
         width: 26px;
         height: 26px;
         font-size: 11px;
+    }
+}
+
+/* Apply safe area insets for smaller screens when supported */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 480px) {
+        .chat-input-area {
+            /* Ensure safe area handling for smaller screens */
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
     }
 }
 
