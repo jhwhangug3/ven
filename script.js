@@ -159,116 +159,9 @@ class Chatbot {
             conversationFlow: [],
             questionCount: 0,
             responseCount: 0,
-            lastInteractionTime: null,
-            
-            // Enhanced context tracking
-            activeTopics: new Set(),
-            conversationDepth: 0,
-            userIntent: null,
-            followUpQuestions: [],
-            contextualKeywords: [],
-            conversationTone: 'neutral',
-            userEngagement: 'medium',
-            topicSwitches: 0,
-            clarificationNeeded: false,
-            previousCommands: [],
-            contextualMemory: new Map(),
-            conversationThreads: [],
-            userPreferences: new Map(),
-            emotionalState: {
-                primary: null,
-                secondary: null,
-                intensity: 0,
-                trend: 'stable'
-            },
-            conversationGoals: [],
-            pendingActions: [],
-            contextualReferences: new Map(),
-            
-            // NEW: Enhanced NLP capabilities
-            sentencePatterns: new Map(),
-            intentClassification: null,
-            entityRecognition: new Map(),
-            sentimentScore: 0,
-            languageComplexity: 'medium',
-            responseStyle: 'adaptive',
-            conversationPhase: 'greeting', // greeting, exploration, deep_discussion, closing
-            userPersonality: {
-                openness: 0.5,
-                conscientiousness: 0.5,
-                extraversion: 0.5,
-                agreeableness: 0.5,
-                neuroticism: 0.5
-            },
-            conversationMetrics: {
-                messageLength: 0,
-                responseTime: 0,
-                topicConsistency: 0,
-                emotionalStability: 0,
-                engagementLevel: 0
-            }
+            lastInteractionTime: null
         };
-
-        // NEW FEATURES - Enhanced capabilities
-        this.fileUploadSystem = {
-            supportedTypes: ['txt', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'],
-            maxFileSize: 10 * 1024 * 1024, // 10MB
-            uploadedFiles: []
-        };
-
-        this.voiceSystem = {
-            isListening: false,
-            isSpeaking: false,
-            recognition: null,
-            synthesis: null,
-            supported: false
-        };
-
-        this.codeExecution = {
-            supportedLanguages: ['javascript', 'python', 'html', 'css', 'json'],
-            sandboxMode: true,
-            executionHistory: []
-        };
-
-        this.weatherSystem = {
-            apiKey: null, // Would need actual API key
-            lastLocation: null,
-            cache: {},
-            cacheExpiry: 30 * 60 * 1000 // 30 minutes
-        };
-
-        this.calendarSystem = {
-            events: [],
-            reminders: [],
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        };
-
-        this.imageGeneration = {
-            supported: false,
-            apiKey: null,
-            lastGenerated: null
-        };
-
-        this.searchFilters = {
-            timeRange: 'any',
-            language: 'en',
-            region: 'us',
-            safeSearch: true
-        };
-
-        this.languageSupport = {
-            currentLanguage: 'en',
-            supportedLanguages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ru', 'ar', 'hi', 'bn'],
-            translations: {}
-        };
-
-        this.analytics = {
-            messageCount: 0,
-            sessionDuration: 0,
-            featuresUsed: {},
-            performanceMetrics: {}
-        };
-
+        
         // init() will be called separately after construction
     }
     
@@ -315,17 +208,6 @@ class Chatbot {
         
         // Initialize login system
         this.initLoginSystem();
-        
-        // Initialize new enhanced features
-        this.initFileUploadSystem();
-        this.initVoiceSystem();
-        this.initCodeExecution();
-        this.initWeatherSystem();
-        this.initCalendarSystem();
-        this.initImageGeneration();
-        this.initSearchFilters();
-        this.initLanguageSupport();
-        this.initAnalytics();
         
         // Ensure user interface is updated after everything is initialized
         setTimeout(() => {
@@ -712,9 +594,7 @@ class Chatbot {
     async getBotResponse(message) {
         const lowerMessage = message.toLowerCase();
         
-        // Track message count for analytics
-        this.analytics.messageCount++;
-        this.trackFeatureUsage('message_sent');
+
         
         // Enhanced context understanding
         const contextResult = this.handleContextualQuery(message);
@@ -722,121 +602,7 @@ class Chatbot {
             return contextResult;
         }
         
-        // Check for small talk and greetings
-        const smallTalkResult = this.handleSmallTalk(message);
-        if (smallTalkResult) {
-            return smallTalkResult;
-        }
-        
-        // Check for general knowledge and trivia
-        const triviaResult = this.handleTriviaQuery(message);
-        if (triviaResult) {
-            return triviaResult;
-        }
-        
-        // Check for mathematical expressions
-        const mathResult = this.solveMathProblem(message);
-        if (mathResult !== null) {
-            return mathResult;
-        }
-        
-        // Check for date, time, and weather queries
-        const dateTimeResult = this.handleDateTimeQuery(message);
-        if (dateTimeResult) {
-            return dateTimeResult;
-        }
-        
-        // Check for translation requests
-        const translationResult = await this.handleTranslationRequest(message);
-        if (translationResult) {
-            return translationResult;
-        }
-        
-        // Check for entertainment and media queries
-        const entertainmentResult = this.handleEntertainmentQuery(message);
-        if (entertainmentResult) {
-            return entertainmentResult;
-        }
-        
-        // Check for mental health and emotional support
-        const emotionalResult = this.handleEmotionalSupport(message);
-        if (emotionalResult) {
-            return emotionalResult;
-        }
-        
-        // Check for productivity and tools
-        const productivityResult = this.handleProductivityQuery(message);
-        if (productivityResult) {
-            return productivityResult;
-        }
-        
-        // Check for shopping and budgeting
-        const shoppingResult = this.handleShoppingQuery(message);
-        if (shoppingResult) {
-            return shoppingResult;
-        }
-        
-        // Check for travel and locations
-        const travelResult = this.handleTravelQuery(message);
-        if (travelResult) {
-            return travelResult;
-        }
-        
-        // Check for tech and coding help
-        const techResult = this.handleTechQuery(message);
-        if (techResult) {
-            return techResult;
-        }
-        
-        // Check for money and finance
-        const financeResult = this.handleFinanceQuery(message);
-        if (financeResult) {
-            return financeResult;
-        }
-        
-        // Check for religion and culture
-        const religionResult = this.handleReligionQuery(message);
-        if (religionResult) {
-            return religionResult;
-        }
-        
-        // Check for food and diet
-        const foodResult = this.handleFoodQuery(message);
-        if (foodResult) {
-            return foodResult;
-        }
-        
-        // Check for science and facts
-        const scienceResult = this.handleScienceQuery(message);
-        if (scienceResult) {
-            return scienceResult;
-        }
-        
-        // Check for creativity and fun
-        const creativityResult = this.handleCreativityQuery(message);
-        if (creativityResult) {
-            return creativityResult;
-        }
-        
-        // Check for app and social help
-        const appResult = this.handleAppQuery(message);
-        if (appResult) {
-            return appResult;
-        }
-        
-        // Check for study and learning
-        const studyResult = this.handleStudyQuery(message);
-        if (studyResult) {
-            return studyResult;
-        }
-        
-        // Check for developer-level queries
-        const devResult = this.handleDeveloperQuery(message);
-        if (devResult) {
-            return devResult;
-        }
-        
-        // Check for simple greetings
+        // Check for simple greetings first
         const greetingResult = this.handleGreetingQuery(message);
         if (greetingResult) {
             return greetingResult;
@@ -854,19 +620,43 @@ class Chatbot {
             return cookingResult;
         }
         
-        // Check for contextual responses based on conversation history
+        // Check for date and day queries first (before time queries)
+        const dateResult = this.handleDateQuery(message);
+        if (dateResult) {
+            return dateResult;
+        }
+        
+        // Check for time-related queries
+        const timeResult = this.handleTimeQuery(message);
+        if (timeResult) {
+            return timeResult;
+        }
+        
+        // Check for mathematical expressions first
+        const mathResult = this.solveMathProblem(message);
+        if (mathResult !== null) {
+            return mathResult;
+        }
+        
+        // Check for translation requests first
+        const translationResult = await this.handleTranslationRequest(message);
+        if (translationResult) {
+            return translationResult;
+        }
+        
+        // Check for contextual responses based on conversation history FIRST (before user memory)
         const contextualResult = this.handleContextualResponse(message);
         if (contextualResult) {
             return contextualResult;
         }
         
-        // Check for user memory/context updates
+        // Check for user memory/context updates (after contextual responses)
         const memoryResult = this.handleUserMemory(message);
         if (memoryResult) {
             return memoryResult;
         }
         
-        // Check for Nahin searches
+        // Check for Nahin searches first (highest priority)
         if (this.isNahinSearch(message)) {
             return this.getNahinInfo(message);
         }
@@ -877,14 +667,32 @@ class Chatbot {
             return knowledgeResult;
         }
         
-        // Check if this is a search query
-        const isSearchQuery = this.isSearchQuery(message);
+        // Check if this is a search query (contains question words or person queries)
+        const isSearchQuery = lowerMessage.includes('who is') || 
+                             lowerMessage.includes('who was') || 
+                             lowerMessage.includes('what is') || 
+                             lowerMessage.includes('what was') ||
+                             lowerMessage.includes('tell me about') ||
+                             lowerMessage.includes('search for') ||
+                             lowerMessage.includes('information about') ||
+                             lowerMessage.includes('how old') ||
+                             lowerMessage.includes('how tall') ||
+                             lowerMessage.includes('where is') ||
+                             lowerMessage.includes('when was') ||
+                             // Check if it's just a single word that could be a person's name
+                             // But exclude common words and greetings
+                             (message.trim().split(' ').length === 1 && 
+                              message.trim().length >= 3 && 
+                              message.trim().length <= 20 &&
+                              /^[a-zA-Z]+$/.test(message.trim()) &&
+                              !this.isCommonWord(message.trim()));
         
+        // If it's a search query, skip generic responses and search directly
         if (isSearchQuery) {
             return await this.searchForInformation(message);
         }
         
-        // Check for exact matches for generic responses
+        // Check for exact matches for generic responses (longer phrases first)
         console.log('Checking responses for:', lowerMessage);
         console.log('Available response keys:', Object.keys(this.responses));
         const sortedKeys = Object.keys(this.responses).sort((a, b) => b.length - a.length);
@@ -3668,54 +3476,7 @@ What specifically would you like to know? I'm here to help! 🤝`
             conversationFlow: [],
             questionCount: 0,
             responseCount: 0,
-            lastInteractionTime: null,
-            
-            // Enhanced context tracking
-            activeTopics: new Set(),
-            conversationDepth: 0,
-            userIntent: null,
-            followUpQuestions: [],
-            contextualKeywords: [],
-            conversationTone: 'neutral',
-            userEngagement: 'medium',
-            topicSwitches: 0,
-            clarificationNeeded: false,
-            previousCommands: [],
-            contextualMemory: new Map(),
-            conversationThreads: [],
-            userPreferences: new Map(),
-            emotionalState: {
-                primary: null,
-                secondary: null,
-                intensity: 0,
-                trend: 'stable'
-            },
-            conversationGoals: [],
-            pendingActions: [],
-            contextualReferences: new Map(),
-            
-            // NEW: Enhanced NLP capabilities
-            sentencePatterns: new Map(),
-            intentClassification: null,
-            entityRecognition: new Map(),
-            sentimentScore: 0,
-            languageComplexity: 'medium',
-            responseStyle: 'adaptive',
-            conversationPhase: 'greeting', // greeting, exploration, deep_discussion, closing
-            userPersonality: {
-                openness: 0.5,
-                conscientiousness: 0.5,
-                extraversion: 0.5,
-                agreeableness: 0.5,
-                neuroticism: 0.5
-            },
-            conversationMetrics: {
-                messageLength: 0,
-                responseTime: 0,
-                topicConsistency: 0,
-                emotionalStability: 0,
-                engagementLevel: 0
-            }
+            lastInteractionTime: null
         };
     }
     
@@ -3922,100 +3683,58 @@ What specifically would you like to know? I'm here to help! 🤝`
         const lowerMessage = message.toLowerCase();
         const currentTime = new Date();
         
-        // Enhanced intent detection
-        const intent = this.detectUserIntent(message);
-        this.conversationContext.userIntent = intent;
-        
         // Update conversation history with enhanced metadata
         this.conversationContext.conversationHistory.push({
             message: message,
             timestamp: currentTime.toISOString(),
             type: this.getMessageType(message),
             emotion: this.detectEmotion(message),
-            topic: this.detectTopic(message),
-            intent: intent
+            topic: this.detectTopic(message)
         });
         
-        // Keep only last 20 messages for better context
-        if (this.conversationContext.conversationHistory.length > 20) {
+        // Keep only last 15 messages for context
+        if (this.conversationContext.conversationHistory.length > 15) {
             this.conversationContext.conversationHistory.shift();
         }
         
-        // Update conversation flow with enhanced data
+        // Update conversation flow
         this.conversationContext.conversationFlow.push({
             type: 'user',
             message: message,
-            timestamp: currentTime,
-            intent: intent,
-            emotion: this.detectEmotion(message),
-            topic: this.detectTopic(message)
+            timestamp: currentTime
         });
         
         // Update interaction time
         this.conversationContext.lastInteractionTime = currentTime;
         
-        // Enhanced topic tracking
+        // Detect and track topics
         const detectedTopic = this.detectTopic(message);
-        if (detectedTopic) {
-            this.updateTopicContext(detectedTopic);
+        if (detectedTopic && !this.conversationContext.topicHistory.includes(detectedTopic)) {
+            this.conversationContext.topicHistory.push(detectedTopic);
         }
         
         // Update user mood based on message content
         this.conversationContext.userMood = this.detectUserMood(message);
         
-        // Enhanced emotion tracking
-        const emotion = this.detectEmotion(message);
-        if (emotion) {
-            this.updateEmotionalState(emotion);
-        }
-        
-        // Detect conversation tone
-        const tone = this.detectConversationTone(message);
-        this.conversationContext.conversationTone = tone;
-        
-        // Update engagement level
-        this.updateUserEngagement(message);
-        
-        // Extract and store contextual keywords
-        const keywords = this.extractContextualKeywords(message);
-        this.conversationContext.contextualKeywords = keywords;
-        
-        // Update conversation depth
-        this.updateConversationDepth();
-        
         // Check if this message is a question that expects a response
         if (this.isQuestion(message)) {
             this.conversationContext.lastQuestion = message;
             this.conversationContext.questionCount++;
-            
-            // Generate potential follow-up questions
-            this.generateFollowUpQuestions(message);
+            console.log('Set last question:', message);
         }
         
         // Track response patterns
         this.conversationContext.responseCount++;
-        
-        // Update contextual memory
-        this.updateContextualMemory(message, intent, detectedTopic);
-        
-        // Detect if clarification is needed
-        this.conversationContext.clarificationNeeded = this.needsClarification(message);
         
         console.log('Enhanced conversation context:', {
             lastQuestion: this.conversationContext.lastQuestion,
             currentTopic: this.conversationContext.currentTopic,
             userMood: this.conversationContext.userMood,
             emotion: this.conversationContext.emotion,
-            intent: this.conversationContext.userIntent,
-            tone: this.conversationContext.conversationTone,
-            engagement: this.conversationContext.userEngagement,
-            depth: this.conversationContext.conversationDepth,
-            activeTopics: Array.from(this.conversationContext.activeTopics),
             topicHistory: this.conversationContext.topicHistory,
             historyLength: this.conversationContext.conversationHistory.length,
             questionCount: this.conversationContext.questionCount,
-            responseCount: this.conversationContext.responseCount,
-            clarificationNeeded: this.conversationContext.clarificationNeeded
+            responseCount: this.conversationContext.responseCount
         });
     }
     
@@ -4664,7 +4383,7 @@ What specifically would you like to know? I'm here to help! 🤝`
 - 1 cup all-purpose flour
 - 3 eggs
 - 1/4 tsp salt
-- 1/2 cup sugar
+- 1/4 cup sugar
 - 1 tsp cinnamon
 - Oil for frying
 
@@ -7303,384 +7022,8 @@ What specifically would you like to know? I'm here to help! 🤝`
         
         return commonWords.includes(word.toLowerCase());
     }
+    
 
-    // ===== NEW ENHANCED FEATURES =====
-
-    // File Upload System
-    initFileUploadSystem() {
-        // File upload functionality available but not shown in UI
-        // Users can still access file features through chat commands
-    }
-
-    showFileUploadDialog() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = this.fileUploadSystem.supportedTypes.map(type => `.${type}`).join(',');
-        input.multiple = true;
-        input.addEventListener('change', (e) => this.handleFileUpload(e.target.files));
-        input.click();
-    }
-
-    async handleFileUpload(files) {
-        for (const file of files) {
-            if (file.size > this.fileUploadSystem.maxFileSize) {
-                this.addMessage(`File ${file.name} is too large. Maximum size is 10MB.`, 'bot');
-                continue;
-            }
-
-            const fileType = file.name.split('.').pop().toLowerCase();
-            if (!this.fileUploadSystem.supportedTypes.includes(fileType)) {
-                this.addMessage(`File type .${fileType} is not supported.`, 'bot');
-                continue;
-            }
-
-            try {
-                const content = await this.readFileContent(file);
-                this.fileUploadSystem.uploadedFiles.push({
-                    name: file.name,
-                    type: fileType,
-                    size: file.size,
-                    content: content,
-                    uploadedAt: new Date()
-                });
-
-                this.addMessage(`📎 File "${file.name}" uploaded successfully! I can now analyze its content.`, 'bot');
-                
-                // Analyze the file content
-                const analysis = await this.analyzeFileContent(file.name, content, fileType);
-                this.addMessage(analysis, 'bot');
-            } catch (error) {
-                this.addMessage(`Error uploading file ${file.name}: ${error.message}`, 'bot');
-            }
-        }
-    }
-
-    readFileContent(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = (e) => reject(new Error('Failed to read file'));
-            
-            if (file.type.startsWith('text/') || file.type === 'application/json') {
-                reader.readAsText(file);
-            } else {
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
-    async analyzeFileContent(fileName, content, fileType) {
-        let analysis = `📄 **File Analysis: ${fileName}**\n\n`;
-        
-        switch (fileType) {
-            case 'txt':
-                analysis += this.analyzeTextFile(content);
-                break;
-            case 'json':
-                analysis += this.analyzeJsonFile(content);
-                break;
-            case 'html':
-                analysis += this.analyzeHtmlFile(content);
-                break;
-            case 'css':
-                analysis += this.analyzeCssFile(content);
-                break;
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-            case 'gif':
-                analysis += this.analyzeImageFile(fileName, content);
-                break;
-            default:
-                analysis += `File type ${fileType} uploaded. Content length: ${content.length} characters.`;
-        }
-        
-        return analysis;
-    }
-
-    analyzeTextFile(content) {
-        const lines = content.split('\n');
-        const words = content.split(/\s+/);
-        const characters = content.length;
-        
-        return `📝 **Text Analysis:**
-• Lines: ${lines.length}
-• Words: ${words.length}
-• Characters: ${characters}
-• Average words per line: ${(words.length / lines.length).toFixed(1)}
-
-**Content Preview:**
-${content.substring(0, 200)}${content.length > 200 ? '...' : ''}`;
-    }
-
-    analyzeJsonFile(content) {
-        try {
-            const json = JSON.parse(content);
-            const keys = Object.keys(json);
-            return `📊 **JSON Analysis:**
-• Valid JSON structure
-• Top-level keys: ${keys.length}
-• Keys: ${keys.join(', ')}
-• Data type: ${Array.isArray(json) ? 'Array' : 'Object'}`;
-        } catch (error) {
-            return `❌ **JSON Analysis:**
-Invalid JSON format: ${error.message}`;
-        }
-    }
-
-    analyzeHtmlFile(content) {
-        const tags = content.match(/<[^>]+>/g) || [];
-        const uniqueTags = [...new Set(tags.map(tag => tag.match(/<(\w+)/)?.[1]).filter(Boolean))];
-        
-        return `🌐 **HTML Analysis:**
-• Total tags: ${tags.length}
-• Unique tag types: ${uniqueTags.length}
-• Tag types: ${uniqueTags.join(', ')}
-• Document structure analyzed`;
-    }
-
-    analyzeCssFile(content) {
-        const rules = content.match(/[^{}]+\{[^}]+\}/g) || [];
-        const selectors = content.match(/[^{}]+\{/g) || [];
-        
-        return `🎨 **CSS Analysis:**
-• CSS rules: ${rules.length}
-• Selectors: ${selectors.length}
-• Stylesheet structure analyzed`;
-    }
-
-    analyzeImageFile(fileName, content) {
-        return `🖼️ **Image Analysis:**
-• File: ${fileName}
-• Image uploaded successfully
-• Ready for image processing or analysis`;
-    }
-
-    // Voice System
-    initVoiceSystem() {
-        // Check for Web Speech API support
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            this.voiceSystem.supported = true;
-            this.voiceSystem.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            this.voiceSystem.synthesis = window.speechSynthesis;
-            
-            this.setupVoiceRecognition();
-        } else {
-            console.log('Speech recognition not supported');
-        }
-    }
-
-    setupVoiceRecognition() {
-        this.voiceSystem.recognition.continuous = false;
-        this.voiceSystem.recognition.interimResults = false;
-        this.voiceSystem.recognition.lang = 'en-US';
-        
-        this.voiceSystem.recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            this.messageInput.value = transcript;
-            this.sendMessage();
-        };
-        
-        this.voiceSystem.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            this.hideVoiceIndicator();
-        };
-        
-        this.voiceSystem.recognition.onend = () => {
-            this.hideVoiceIndicator();
-        };
-    }
-
-    startVoiceRecognition() {
-        if (this.voiceSystem.supported && !this.voiceSystem.isListening) {
-            this.voiceSystem.isListening = true;
-            this.voiceSystem.recognition.start();
-            this.showVoiceIndicator();
-        }
-    }
-
-    stopVoiceRecognition() {
-        if (this.voiceSystem.isListening) {
-            this.voiceSystem.recognition.stop();
-            this.voiceSystem.isListening = false;
-        }
-    }
-
-    speakText(text) {
-        if (this.voiceSystem.synthesis && !this.voiceSystem.isSpeaking) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            utterance.volume = 0.8;
-            
-            utterance.onstart = () => {
-                this.voiceSystem.isSpeaking = true;
-            };
-            
-            utterance.onend = () => {
-                this.voiceSystem.isSpeaking = false;
-            };
-            
-            this.voiceSystem.synthesis.speak(utterance);
-        }
-    }
-
-    // Code Execution System
-    initCodeExecution() {
-        // Code execution functionality available but not shown in UI
-        // Users can still access code features through chat commands
-    }
-
-    showCodeExecutionDialog() {
-        const dialog = document.createElement('div');
-        dialog.className = 'code-execution-modal';
-        dialog.innerHTML = `
-            <div class="code-execution-content">
-                <h3>Code Execution</h3>
-                <select id="codeLanguage">
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python (Simulated)</option>
-                    <option value="html">HTML</option>
-                    <option value="css">CSS</option>
-                </select>
-                <textarea id="codeInput" placeholder="Enter your code here..."></textarea>
-                <div class="code-execution-buttons">
-                    <button id="runCode">Run Code</button>
-                    <button id="closeCodeDialog">Cancel</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(dialog);
-        
-        document.getElementById('runCode').addEventListener('click', () => {
-            const language = document.getElementById('codeLanguage').value;
-            const code = document.getElementById('codeInput').value;
-            this.executeCode(code, language);
-            document.body.removeChild(dialog);
-        });
-        
-        document.getElementById('closeCodeDialog').addEventListener('click', () => {
-            document.body.removeChild(dialog);
-        });
-    }
-
-    executeCode(code, language) {
-        let result = '';
-        
-        switch (language) {
-            case 'javascript':
-                try {
-                    const sandbox = new Function('return ' + code);
-                    result = sandbox();
-                    this.addMessage(`✅ **JavaScript Execution Result:**\n\`\`\`javascript\n${code}\n\`\`\`\n**Output:** ${result}`, 'bot');
-                } catch (error) {
-                    this.addMessage(`❌ **JavaScript Error:**\n\`\`\`javascript\n${code}\n\`\`\`\n**Error:** ${error.message}`, 'bot');
-                }
-                break;
-                
-            case 'html':
-                const htmlResult = this.renderHtmlPreview(code);
-                this.addMessage(`🌐 **HTML Preview:**\n\`\`\`html\n${code}\n\`\`\`\n**Rendered:**\n${htmlResult}`, 'bot');
-                break;
-                
-            case 'css':
-                const cssResult = this.renderCssPreview(code);
-                this.addMessage(`🎨 **CSS Preview:**\n\`\`\`css\n${code}\n\`\`\`\n**Applied styles:** ${cssResult}`, 'bot');
-                break;
-                
-            default:
-                this.addMessage(`📝 **Code Analysis:**\n\`\`\`${language}\n${code}\n\`\`\`\nLanguage: ${language}\nLines: ${code.split('\n').length}`, 'bot');
-        }
-        
-        this.codeExecution.executionHistory.push({
-            code,
-            language,
-            result,
-            timestamp: new Date()
-        });
-    }
-
-    renderHtmlPreview(html) {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || div.innerText || '';
-    }
-
-    renderCssPreview(css) {
-        return `CSS rules applied: ${css.split('}').length - 1} rules`;
-    }
-
-    // Weather System
-    initWeatherSystem() {
-        // Weather functionality available but not shown in UI
-        // Users can still access weather features through chat commands
-    }
-
-    async getCurrentWeather() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const weather = await this.fetchWeatherData(latitude, longitude);
-                    this.addMessage(weather, 'bot');
-                },
-                (error) => {
-                    this.addMessage(`❌ **Weather Error:** Unable to get location. Please enable location services or provide a city name.`, 'bot');
-                }
-            );
-        } else {
-            this.addMessage(`❌ **Weather Error:** Geolocation not supported. Please provide a city name.`, 'bot');
-        }
-    }
-
-    async fetchWeatherData(lat, lon) {
-        // Simulated weather data (in real app, would use actual API)
-        const weatherData = {
-            temperature: Math.round(15 + Math.random() * 20),
-            condition: ['Sunny', 'Cloudy', 'Rainy', 'Partly Cloudy'][Math.floor(Math.random() * 4)],
-            humidity: Math.round(40 + Math.random() * 40),
-            windSpeed: Math.round(5 + Math.random() * 15)
-        };
-        
-        return `🌤️ **Current Weather:**
-• Temperature: ${weatherData.temperature}°C
-• Condition: ${weatherData.condition}
-• Humidity: ${weatherData.humidity}%
-• Wind Speed: ${weatherData.windSpeed} km/h
-
-*Location: ${lat.toFixed(2)}, ${lon.toFixed(2)}*`;
-    }
-
-    // Generate clarification response
-    generateClarificationResponse(message) {
-        const clarifications = [
-            "Could you give me a bit more context about that?",
-            "I want to make sure I understand correctly. Can you clarify?",
-            "To help you better, could you provide more details?",
-            "I'm not quite sure what you mean. Could you explain further?"
-        ];
-        
-        return this.getRandomResponse(clarifications);
-    }
-
-    // Generate default contextual response
-    generateDefaultContextualResponse(message, intent, tone) {
-        const responses = {
-            information_seeking: "I'd be happy to help you find that information!",
-            task_completion: "I'll help you with that!",
-            social_interaction: "That's great! I'm here to chat!",
-            emotional_support: "I'm here to support you!",
-            learning: "I'd love to help you learn!",
-            entertainment: "Let's have some fun!",
-            problem_solving: "Let's solve this together!",
-            opinion_advice: "I'll share my thoughts on that!",
-            casual_conversation: "That's interesting! Tell me more!",
-            general_inquiry: "I'm here to help with whatever you need!"
-        };
-        
-        return responses[intent] || "I'm here to help!";
-    }
 }
 
 // Initialize chatbot when page loads
